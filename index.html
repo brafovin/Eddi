@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jujutsu Kaisen - Battleground</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0a0a0f;
+    color: #fff;
+    font-family: 'Segoe UI', sans-serif;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #app { width: 900px; max-width: 100vw; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── TITLE SCREEN ── */
+  #title-screen { text-align: center; }
+  #title-screen h1 {
+    font-size: 3rem;
+    background: linear-gradient(135deg, #8b5cf6, #c084fc, #e879f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: 4px;
+    text-shadow: none;
+    margin-bottom: .5rem;
+  }
+  #title-screen .subtitle {
+    color: #a78bfa;
+    letter-spacing: 8px;
+    font-size: .9rem;
+    margin-bottom: 3rem;
+  }
+  .btn {
+    background: linear-gradient(135deg, #5b21b6, #7c3aed);
+    border: 2px solid #8b5cf6;
+    color: #fff;
+    padding: 14px 40px;
+    font-size: 1.1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all .2s;
+    display: inline-block;
+  }
+  .btn:hover { background: linear-gradient(135deg, #7c3aed, #a855f7); transform: scale(1.05); box-shadow: 0 0 20px #8b5cf688; }
+
+  /* ── CHARACTER SELECT ── */
+  #select-screen h2 { text-align:center; color:#c084fc; letter-spacing:4px; margin-bottom:1.5rem; font-size:1.5rem; }
+  .char-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
+  .char-card {
+    background: #13131f;
+    border: 2px solid #2d1f6e;
+    border-radius: 12px;
+    padding: 20px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .char-card:hover, .char-card.selected {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 24px #8b5cf644;
+    transform: translateY(-4px);
+  }
+  .char-card canvas { display: block; margin: 0 auto 10px; }
+  .char-card .name { font-size: 1rem; font-weight: bold; color: #e9d5ff; }
+  .char-card .school { font-size: .75rem; color: #7c3aed; letter-spacing: 2px; margin-top: 4px; }
+  .char-card .grade { position:absolute; top:8px; right:8px; font-size:.7rem; color:#c084fc; }
+
+  #select-screen .btn { display: block; margin: 1.5rem auto 0; }
+
+  /* ── BATTLE SCREEN ── */
+  #battle-screen { position: relative; }
+  #battle-canvas { display: block; border-radius: 12px; border: 1px solid #2d1f6e; }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .fighter-hud { width: 260px; }
+  .fighter-hud .fighter-name { font-size: .85rem; letter-spacing: 2px; color: #c084fc; margin-bottom: 4px; }
+  .bar-label { font-size: .7rem; color: #888; margin-bottom: 2px; }
+  .bar-track { background: #1a1a2e; border-radius: 4px; height: 12px; margin-bottom: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width .3s ease; }
+  .hp-fill { background: linear-gradient(90deg, #10b981, #34d399); }
+  .hp-fill.low { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .hp-fill.mid { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .ce-fill { background: linear-gradient(90deg, #8b5cf6, #c084fc); }
+  .bar-text { font-size: .7rem; color: #ccc; text-align: right; }
+
+  .enemy-hud { text-align: right; }
+  .enemy-hud .fighter-name { text-align: right; }
+
+  .turn-indicator {
+    text-align: center;
+    font-size: .8rem;
+    letter-spacing: 3px;
+    color: #a78bfa;
+    padding-top: 4px;
+  }
+
+  /* ── MOVE BUTTONS ── */
+  #move-panel {
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .move-btn {
+    background: #13131f;
+    border: 1px solid #2d1f6e;
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s;
+    position: relative;
+  }
+  .move-btn:hover:not(.disabled) { border-color: #8b5cf6; background: #1e1435; box-shadow: 0 0 12px #8b5cf633; }
+  .move-btn.disabled { opacity: .4; cursor: not-allowed; }
+  .move-btn .move-name { font-size: .8rem; font-weight: bold; color: #e9d5ff; }
+  .move-btn .move-type { font-size: .65rem; letter-spacing: 2px; color: #7c3aed; margin-top: 2px; }
+  .move-btn .move-cost { font-size: .65rem; color: #a78bfa; margin-top: 2px; }
+  .move-btn .move-dmg { font-size: .65rem; color: #f0abfc; margin-top: 2px; }
+
+  /* ── BATTLE LOG ── */
+  #battle-log {
+    margin-top: 8px;
+    background: #0d0d1a;
+    border: 1px solid #1e1435;
+    border-radius: 8px;
+    padding: 8px 12px;
+    height: 70px;
+    overflow-y: auto;
+    font-size: .78rem;
+    color: #ccc;
+  }
+  #battle-log .log-entry { margin-bottom: 3px; }
+  #battle-log .log-entry.crit { color: #f0abfc; font-weight: bold; }
+  #battle-log .log-entry.dmg { color: #fca5a5; }
+  #battle-log .log-entry.heal { color: #6ee7b7; }
+  #battle-log .log-entry.system { color: #818cf8; }
+
+  /* ── RESULT SCREEN ── */
+  #result-screen { text-align: center; padding: 2rem 0; }
+  #result-screen h2 { font-size: 3rem; margin-bottom: 1rem; }
+  #result-screen h2.win { color: #c084fc; text-shadow: 0 0 30px #8b5cf6; }
+  #result-screen h2.lose { color: #f87171; text-shadow: 0 0 30px #ef4444; }
+  #result-screen .result-msg { color: #a78bfa; margin-bottom: 2rem; font-size: 1.1rem; letter-spacing: 2px; }
+  .btn-row { display: flex; gap: 16px; justify-content: center; }
+
+  /* ── PARTICLES ── */
+  #particle-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    pointer-events: none;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #0d0d1a; }
+  ::-webkit-scrollbar-thumb { background: #5b21b6; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+<div id="app">
+
+  <!-- TITLE -->
+  <div id="title-screen" class="screen active">
+    <h1>呪術廻戦</h1>
+    <div class="subtitle">JUJUTSU KAISEN · BATTLEGROUND</div>
+    <canvas id="title-canvas" width="900" height="220"></canvas>
+    <br>
+    <button class="btn" onclick="showScreen('select-screen')">SPIEL STARTEN</button>
+  </div>
+
+  <!-- CHARACTER SELECT -->
+  <div id="select-screen" class="screen">
+    <h2>— CHARAKTER WÄHLEN —</h2>
+    <div class="char-grid" id="char-grid"></div>
+    <button class="btn" id="confirm-btn" onclick="confirmSelection()" style="opacity:.4;pointer-events:none;">KÄMPFEN →</button>
+  </div>
+
+  <!-- BATTLE -->
+  <div id="battle-screen" class="screen">
+    <div class="hud">
+      <div class="fighter-hud" id="player-hud">
+        <div class="fighter-name" id="p-name">YUJI ITADORI</div>
+        <div class="bar-label">HP</div>
+        <div class="bar-track"><div class="bar-fill hp-fill" id="p-hp-bar" style="width:100%"></div></div>
+        <div class="bar-text" id="p-hp-text">200 / 200</div>
+        <div class="bar-label">Cursed Energy</div>
+        <div class="bar-track"><div class="bar-fill ce-fill" id="p-ce-bar" style="width:100%"></div></div>
+        <div class="bar-text" id="p-ce-text">100 / 100</div>
+      </div>
+      <div class="turn-indicator" id="turn-indicator">RUNDE 1</div>
+      <div class="fighter-hud enemy-hud" id="enemy-hud">
+        <div class="fighter-name" id="e-name">MAHITO</div>
+        <div class="bar-label" style="text-align:right">HP</div>
+        <div class="bar-track"><div class="bar-fill hp-fill" id="e-hp-bar" style="width:100%"></div></div>
+        <div class="bar-text" id="e-hp-text">180 / 180</div>
+        <div class="bar-label" style="text-align:right">Cursed Energy</div>
+        <div class="bar-track"><div class="bar-fill ce-fill" id="e-ce-bar" style="width:100%"></div></div>
+        <div class="bar-text" id="e-ce-text">80 / 80</div>
+      </div>
+    </div>
+    <canvas id="battle-canvas" width="900" height="320"></canvas>
+    <div id="move-panel"></div>
+    <div id="battle-log"></div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result-screen" class="screen">
+    <h2 id="result-title">SIEG!</h2>
+    <div class="result-msg" id="result-msg"></div>
+    <div class="btn-row">
+      <button class="btn" onclick="nextEnemy()">NÄCHSTER GEGNER</button>
+      <button class="btn" onclick="showScreen('select-screen')">CHARAKTER WECHSELN</button>
+      <button class="btn" onclick="showScreen('title-screen')">HAUPTMENÜ</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════
+
+const CHARACTERS = {
+  yuji: {
+    name: 'YUJI ITADORI',
+    school: 'TOKYO JJK HIGHSCHOOL',
+    grade: 'GRADE 1',
+    maxHp: 220,
+    maxCe: 100,
+    color: '#f97316',
+    accentColor: '#fb923c',
+    bodyColor: '#1c1917',
+    moves: [
+      { id:'punch',    name:'Divergent Fist',    type:'PHYSICAL',  cost:0,  dmg:[18,28], crit:0.15, desc:'Kraftvoller Faustschlag' },
+      { id:'blackflash',name:'Black Flash',      type:'TECHNIQUE', cost:25, dmg:[45,65], crit:0.25, desc:'Cursed Energy Blitz' },
+      { id:'sukuna',  name:'Cleave',             type:'SUKUNA',    cost:40, dmg:[60,80], crit:0.2,  desc:'Sukunas Klinge' },
+      { id:'mahoraga',name:'Mahoraga',           type:'DOMAIN',    cost:80, dmg:[90,120],crit:0.1,  desc:'Eight Handled Sword' },
+    ]
+  },
+  megumi: {
+    name: 'MEGUMI FUSHIGURO',
+    school: 'TOKYO JJK HIGHSCHOOL',
+    grade: 'GRADE 2',
+    maxHp: 190,
+    maxCe: 110,
+    color: '#3b82f6',
+    accentColor: '#60a5fa',
+    bodyColor: '#0f172a',
+    moves: [
+      { id:'dogs',    name:'Shadow Dogs',        type:'TECHNIQUE', cost:10, dmg:[20,32], crit:0.1,  desc:'Schattenhunde angreifen' },
+      { id:'nue',     name:'Nue',                type:'TECHNIQUE', cost:20, dmg:[35,50], crit:0.15, desc:'Donner-Chimäre' },
+      { id:'divine',  name:'Divine Dog: Totality',type:'TECHNIQUE',cost:45, dmg:[65,85], crit:0.2,  desc:'Göttlicher Hund erwacht' },
+      { id:'domain',  name:'Chimera Shadow Garden',type:'DOMAIN',  cost:90, dmg:[100,130],crit:0.15,desc:'Schattengarten Domain' },
+    ]
+  },
+  nobara: {
+    name: 'NOBARA KUGISAKI',
+    school: 'TOKYO JJK HIGHSCHOOL',
+    grade: 'GRADE 3',
+    maxHp: 175,
+    maxCe: 115,
+    color: '#ec4899',
+    accentColor: '#f472b6',
+    bodyColor: '#1a0a12',
+    moves: [
+      { id:'hammer',  name:'Straw Doll',         type:'TECHNIQUE', cost:10, dmg:[22,34], crit:0.12, desc:'Nagel & Hammer Technik' },
+      { id:'resonance',name:'Resonance',         type:'TECHNIQUE', cost:30, dmg:[50,70], crit:0.2,  desc:'Fluch-Resonanz' },
+      { id:'hairpin', name:'Hairpin',            type:'TECHNIQUE', cost:50, dmg:[70,95], crit:0.25, desc:'Explosive Haarnadel' },
+      { id:'overtime',name:'Overtime',           type:'DOMAIN',    cost:85, dmg:[95,125],crit:0.2,  desc:'Maximale Fluchkraft' },
+    ]
+  },
+  gojo: {
+    name: 'SATORU GOJO',
+    school: 'TOKYO JJK HIGHSCHOOL',
+    grade: 'SPECIAL GRADE',
+    maxHp: 300,
+    maxCe: 150,
+    color: '#8b5cf6',
+    accentColor: '#c084fc',
+    bodyColor: '#0f0a1f',
+    moves: [
+      { id:'infinity',name:'Infinity',           type:'TECHNIQUE', cost:0,  dmg:[15,25], crit:0.1,  desc:'Unendlichkeit – Barriere' },
+      { id:'blue',    name:'Cursed Technique: Blue',type:'TECHNIQUE',cost:30,dmg:[55,75],crit:0.15, desc:'Anziehungskraft Blaue' },
+      { id:'red',     name:'Cursed Technique: Red',type:'TECHNIQUE',cost:40,dmg:[70,90], crit:0.2,  desc:'Abstoßungskraft Rote' },
+      { id:'purple',  name:'Hollow Purple',      type:'DOMAIN',    cost:100,dmg:[120,160],crit:0.3, desc:'Hohlraum Lila – Vernichtung' },
+    ]
+  }
+};
+
+const ENEMIES = [
+  {
+    name: 'MAHITO',
+    title: 'Cursed Spirit',
+    maxHp: 180, maxCe: 80,
+    color: '#6b7280', accentColor: '#9ca3af',
+    moves: [
+      { name:'Idle Transfiguration', dmg:[25,40], cost:15, crit:0.15 },
+      { name:'Soul Multiplicity',    dmg:[45,65], cost:35, crit:0.2  },
+      { name:'Body Repel',           dmg:[60,80], cost:50, crit:0.25 },
+      { name:'Self Embodiment of Perfection', dmg:[90,120], cost:80, crit:0.3 },
+    ]
+  },
+  {
+    name: 'JOGO',
+    title: 'Special Grade Cursed Spirit',
+    maxHp: 210, maxCe: 100,
+    color: '#dc2626', accentColor: '#f87171',
+    moves: [
+      { name:'Ember Insects',        dmg:[30,45], cost:10, crit:0.1  },
+      { name:'Maximum: Meteor',      dmg:[60,80], cost:40, crit:0.2  },
+      { name:'Volcanic Fist',        dmg:[40,60], cost:25, crit:0.15 },
+      { name:'Coffin of the Iron Mountain', dmg:[100,140], cost:90, crit:0.35 },
+    ]
+  },
+  {
+    name: 'RYOMEN SUKUNA',
+    title: 'King of Curses',
+    maxHp: 350, maxCe: 200,
+    color: '#b91c1c', accentColor: '#fca5a5',
+    moves: [
+      { name:'Cleave',               dmg:[40,60], cost:0,  crit:0.2  },
+      { name:'Dismantle',            dmg:[55,75], cost:20, crit:0.25 },
+      { name:'Malevolent Shrine',    dmg:[90,120],cost:70, crit:0.3  },
+      { name:'World Cutting Slash',  dmg:[130,180],cost:120,crit:0.4 },
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+
+let state = {
+  selectedChar: null,
+  currentEnemy: 0,
+  player: null,
+  enemy: null,
+  turn: 'player',
+  round: 1,
+  animating: false,
+  effects: [],
+  particles: []
+};
+
+// ═══════════════════════════════════════════════════
+//  SCREEN MANAGEMENT
+// ═══════════════════════════════════════════════════
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'title-screen') drawTitleScene();
+  if (id === 'select-screen') buildCharGrid();
+}
+
+// ═══════════════════════════════════════════════════
+//  TITLE CANVAS
+// ═══════════════════════════════════════════════════
+
+function drawTitleScene() {
+  const c = document.getElementById('title-canvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+
+  // Background glow
+  const grd = ctx.createRadialGradient(450,110,10,450,110,300);
+  grd.addColorStop(0,'#3b0764');
+  grd.addColorStop(1,'#0a0a0f');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0,0,900,220);
+
+  // Draw 4 character silhouettes
+  const chars = Object.values(CHARACTERS);
+  chars.forEach((ch, i) => {
+    const x = 130 + i*165;
+    drawCharSilhouette(ctx, x, 180, ch.color, 1.3, false);
+  });
+
+  // Cursed energy lines
+  for (let i=0; i<12; i++) {
+    ctx.strokeStyle = `rgba(139,92,246,${Math.random()*0.3})`;
+    ctx.lineWidth = Math.random()*2;
+    ctx.beginPath();
+    ctx.moveTo(Math.random()*900, 220);
+    ctx.lineTo(450, 0);
+    ctx.stroke();
+  }
+}
+
+function drawCharSilhouette(ctx, x, y, color, scale=1, showAura=true) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+
+  if (showAura) {
+    const grd = ctx.createRadialGradient(0,-60,5,0,-60,70);
+    grd.addColorStop(0, color+'44');
+    grd.addColorStop(1, 'transparent');
+    ctx.fillStyle = grd;
+    ctx.fillRect(-70,-130,140,140);
+  }
+
+  // Body
+  ctx.fillStyle = '#111118';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(0,-95,18,0,Math.PI*2);
+  ctx.fill(); ctx.stroke();
+
+  // Torso
+  ctx.beginPath();
+  ctx.moveTo(-16,-77);
+  ctx.lineTo(16,-77);
+  ctx.lineTo(20,-30);
+  ctx.lineTo(-20,-30);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Arms
+  ctx.beginPath();
+  ctx.moveTo(-16,-70); ctx.lineTo(-38,-45); ctx.lineTo(-30,-20);
+  ctx.strokeStyle = color; ctx.lineWidth = 8; ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(16,-70); ctx.lineTo(38,-45); ctx.lineTo(30,-20);
+  ctx.stroke();
+
+  // Legs
+  ctx.beginPath();
+  ctx.moveTo(-10,-30); ctx.lineTo(-15,0); ctx.lineTo(-12,40);
+  ctx.lineWidth = 10; ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(10,-30); ctx.lineTo(15,0); ctx.lineTo(12,40);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════
+//  CHARACTER SELECT
+// ═══════════════════════════════════════════════════
+
+function buildCharGrid() {
+  const grid = document.getElementById('char-grid');
+  grid.innerHTML = '';
+  Object.entries(CHARACTERS).forEach(([key, ch]) => {
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.dataset.key = key;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 160; canvas.height = 140;
+    card.appendChild(canvas);
+
+    const ctx = canvas.getContext('2d');
+    const bg = ctx.createRadialGradient(80,70,5,80,70,80);
+    bg.addColorStop(0, ch.color+'22');
+    bg.addColorStop(1, 'transparent');
+    ctx.fillStyle = bg; ctx.fillRect(0,0,160,140);
+    drawCharSilhouette(ctx, 80, 130, ch.color, 1, true);
+
+    card.innerHTML += `<div class="name">${ch.name}</div><div class="school">${ch.school}</div><div class="grade">${ch.grade}</div>`;
+    card.appendChild(canvas); // re-append after innerHTML
+    card.insertBefore(canvas, card.firstChild);
+
+    card.onclick = () => selectChar(key);
+    grid.appendChild(card);
+  });
+}
+
+function selectChar(key) {
+  state.selectedChar = key;
+  document.querySelectorAll('.char-card').forEach(c => c.classList.toggle('selected', c.dataset.key===key));
+  const btn = document.getElementById('confirm-btn');
+  btn.style.opacity = '1';
+  btn.style.pointerEvents = 'auto';
+}
+
+function confirmSelection() {
+  if (!state.selectedChar) return;
+  state.currentEnemy = 0;
+  startBattle();
+}
+
+// ═══════════════════════════════════════════════════
+//  BATTLE SETUP
+// ═══════════════════════════════════════════════════
+
+function startBattle() {
+  const ch = CHARACTERS[state.selectedChar];
+  const en = ENEMIES[state.currentEnemy];
+
+  state.player = { ...ch, hp: ch.maxHp, ce: ch.maxCe, key: state.selectedChar };
+  state.enemy  = { ...en, hp: en.maxHp, ce: en.maxCe };
+  state.turn   = 'player';
+  state.round  = 1;
+  state.effects = [];
+  state.animating = false;
+
+  updateHUD();
+  buildMovePanel();
+  clearLog();
+  addLog(`⚔ Kampf beginnt! ${ch.name} vs ${en.name}!`, 'system');
+
+  showScreen('battle-screen');
+  requestAnimationFrame(battleLoop);
+}
+
+// ═══════════════════════════════════════════════════
+//  HUD
+// ═══════════════════════════════════════════════════
+
+function updateHUD() {
+  const p = state.player, e = state.enemy;
+
+  document.getElementById('p-name').textContent = p.name;
+  document.getElementById('e-name').textContent = e.name;
+
+  const pHpPct = Math.max(0, p.hp/p.maxHp*100);
+  const eHpPct = Math.max(0, e.hp/e.maxHp*100);
+
+  const pBar = document.getElementById('p-hp-bar');
+  pBar.style.width = pHpPct+'%';
+  pBar.className = 'bar-fill hp-fill' + (pHpPct<25?' low':pHpPct<50?' mid':'');
+
+  const eBar = document.getElementById('e-hp-bar');
+  eBar.style.width = eHpPct+'%';
+  eBar.className = 'bar-fill hp-fill' + (eHpPct<25?' low':eHpPct<50?' mid':'');
+
+  document.getElementById('p-hp-text').textContent = `${Math.max(0,p.hp)} / ${p.maxHp}`;
+  document.getElementById('e-hp-text').textContent = `${Math.max(0,e.hp)} / ${e.maxHp}`;
+
+  document.getElementById('p-ce-bar').style.width = (p.ce/p.maxCe*100)+'%';
+  document.getElementById('e-ce-bar').style.width = (e.ce/e.maxCe*100)+'%';
+  document.getElementById('p-ce-text').textContent = `${Math.round(p.ce)} / ${p.maxCe}`;
+  document.getElementById('e-ce-text').textContent = `${Math.round(e.ce)} / ${e.maxCe}`;
+
+  document.getElementById('turn-indicator').textContent = `RUNDE ${state.round} · ${state.turn==='player'?'DEIN ZUG':'GEGNER…'}`;
+}
+
+// ═══════════════════════════════════════════════════
+//  MOVE PANEL
+// ═══════════════════════════════════════════════════
+
+function buildMovePanel() {
+  const panel = document.getElementById('move-panel');
+  const moves = state.player.moves;
+  panel.innerHTML = '';
+  moves.forEach((m, i) => {
+    const btn = document.createElement('div');
+    btn.className = 'move-btn';
+    btn.dataset.index = i;
+    btn.innerHTML = `
+      <div class="move-name">${m.name}</div>
+      <div class="move-type">${m.type}</div>
+      <div class="move-cost">CE: ${m.cost}</div>
+      <div class="move-dmg">DMG: ${m.dmg[0]}–${m.dmg[1]}</div>
+    `;
+    btn.onclick = () => playerMove(i);
+    panel.appendChild(btn);
+  });
+  refreshMoveBtns();
+}
+
+function refreshMoveBtns() {
+  document.querySelectorAll('.move-btn').forEach(btn => {
+    const idx = parseInt(btn.dataset.index);
+    const m = state.player.moves[idx];
+    const disabled = state.player.ce < m.cost || state.animating || state.turn !== 'player';
+    btn.classList.toggle('disabled', disabled);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  COMBAT
+// ═══════════════════════════════════════════════════
+
+function calcDmg(move, attacker) {
+  const [min, max] = move.dmg;
+  let dmg = Math.floor(Math.random()*(max-min+1)+min);
+  const isCrit = Math.random() < (move.crit || 0.1);
+  if (isCrit) dmg = Math.floor(dmg * 1.6);
+  return { dmg, isCrit };
+}
+
+function playerMove(idx) {
+  if (state.animating || state.turn !== 'player') return;
+  const move = state.player.moves[idx];
+  if (state.player.ce < move.cost) { addLog('Nicht genug Cursed Energy!', 'system'); return; }
+
+  state.animating = true;
+  state.player.ce -= move.cost;
+
+  const { dmg, isCrit } = calcDmg(move, state.player);
+  state.enemy.hp -= dmg;
+
+  spawnAttackEffect('player', move);
+
+  setTimeout(() => {
+    if (isCrit) addLog(`✦ KRITISCH! ${move.name}: ${dmg} Schaden!`, 'crit');
+    else addLog(`${move.name}: ${dmg} Schaden!`, 'dmg');
+
+    // Regen a little CE
+    state.player.ce = Math.min(state.player.maxCe, state.player.ce + 8);
+
+    updateHUD();
+    refreshMoveBtns();
+
+    if (state.enemy.hp <= 0) {
+      state.enemy.hp = 0;
+      updateHUD();
+      setTimeout(() => showResult(true), 800);
+      return;
+    }
+
+    state.turn = 'enemy';
+    updateHUD();
+    setTimeout(enemyTurn, 1000);
+  }, 700);
+}
+
+function enemyTurn() {
+  const e = state.enemy;
+  // AI: pick affordable move, prefer damage
+  const affordable = e.moves.filter(m => e.ce >= (m.cost||0));
+  if (!affordable.length) {
+    addLog(`${e.name} hat keine Energie!`, 'system');
+    finishEnemyTurn(); return;
+  }
+  // Weighted random
+  const move = affordable[Math.floor(Math.random()*affordable.length)];
+  e.ce -= (move.cost||0);
+
+  const { dmg, isCrit } = calcDmg(move, e);
+  state.player.hp -= dmg;
+
+  spawnAttackEffect('enemy', move);
+
+  setTimeout(() => {
+    if (isCrit) addLog(`✦ ${e.name} – ${move.name}: KRITISCH ${dmg} Schaden!`, 'crit');
+    else addLog(`${e.name} – ${move.name}: ${dmg} Schaden!`, 'dmg');
+
+    e.ce = Math.min(e.maxCe, e.ce + 10);
+    updateHUD();
+
+    if (state.player.hp <= 0) {
+      state.player.hp = 0;
+      updateHUD();
+      setTimeout(() => showResult(false), 800);
+      return;
+    }
+    finishEnemyTurn();
+  }, 700);
+}
+
+function finishEnemyTurn() {
+  state.round++;
+  state.turn = 'player';
+  state.animating = false;
+  updateHUD();
+  refreshMoveBtns();
+  addLog(`— Runde ${state.round} —`, 'system');
+}
+
+// ═══════════════════════════════════════════════════
+//  EFFECTS / PARTICLES
+// ═══════════════════════════════════════════════════
+
+function spawnAttackEffect(attacker, move) {
+  const canvas = document.getElementById('battle-canvas');
+  const fromX = attacker === 'player' ? 200 : 700;
+  const toX   = attacker === 'player' ? 700 : 200;
+  const y = 200;
+
+  const color = attacker === 'player'
+    ? (state.player.color || '#8b5cf6')
+    : (state.enemy.color || '#ef4444');
+
+  // Add effect to list
+  state.effects.push({
+    x: fromX, y, tx: toX, ty: y,
+    t: 0, maxT: 40,
+    color,
+    type: (move.type || move.name || '').includes('DOMAIN') ? 'domain' : 'projectile',
+    label: move.name || move.id
+  });
+
+  // Spawn particles at target
+  for (let i=0; i<20; i++) {
+    spawnParticle(toX + (Math.random()-0.5)*30, y + (Math.random()-0.5)*40, color);
+  }
+}
+
+function spawnParticle(x, y, color) {
+  state.effects.push({
+    isParticle: true,
+    x, y,
+    vx: (Math.random()-0.5)*6,
+    vy: (Math.random()-0.5)*6 - 2,
+    alpha: 1,
+    radius: Math.random()*5+2,
+    color,
+    t: 0, maxT: 35
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  BATTLE CANVAS RENDER LOOP
+// ═══════════════════════════════════════════════════
+
+let battleAnimFrame = null;
+function battleLoop() {
+  if (!document.getElementById('battle-screen').classList.contains('active')) return;
+  renderBattle();
+  battleAnimFrame = requestAnimationFrame(battleLoop);
+}
+
+function renderBattle() {
+  const canvas = document.getElementById('battle-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Background
+  const bg = ctx.createLinearGradient(0,0,0,canvas.height);
+  bg.addColorStop(0,'#0a0a1a');
+  bg.addColorStop(1,'#130a1f');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Ground line
+  ctx.strokeStyle = '#2d1f6e';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0,270); ctx.lineTo(900,270);
+  ctx.stroke();
+
+  // Atmospheric grid
+  ctx.strokeStyle = 'rgba(139,92,246,0.05)';
+  ctx.lineWidth = 1;
+  for (let x=0; x<900; x+=60) {
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,320); ctx.stroke();
+  }
+  for (let y=0; y<320; y+=60) {
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(900,y); ctx.stroke();
+  }
+
+  // Draw player
+  if (state.player) {
+    const shake = state.effects.some(e=>!e.isParticle&&e.t>25&&e.t<35&&e.tx>500) ? (Math.random()-0.5)*4 : 0;
+    ctx.save();
+    ctx.translate(shake,0);
+    drawFighter(ctx, 200, 260, state.player.color, false);
+    // name tag
+    ctx.fillStyle = state.player.color;
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.player.name, 200, 295);
+    ctx.restore();
+  }
+
+  // Draw enemy
+  if (state.enemy) {
+    const shake = state.effects.some(e=>!e.isParticle&&e.t>25&&e.t<35&&e.tx<500) ? (Math.random()-0.5)*4 : 0;
+    ctx.save();
+    ctx.translate(shake,0);
+    drawFighter(ctx, 700, 260, state.enemy.color, true);
+    ctx.fillStyle = state.enemy.color;
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(state.enemy.name, 700, 295);
+    ctx.restore();
+  }
+
+  // Draw VS
+  ctx.fillStyle = 'rgba(139,92,246,0.15)';
+  ctx.font = 'bold 28px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('VS', 450, 160);
+
+  // Draw effects
+  const remove = [];
+  state.effects.forEach((ef, i) => {
+    ef.t++;
+    if (ef.isParticle) {
+      ef.x += ef.vx;
+      ef.y += ef.vy;
+      ef.vy += 0.15;
+      ef.alpha = 1 - ef.t/ef.maxT;
+      ctx.save();
+      ctx.globalAlpha = ef.alpha;
+      ctx.fillStyle = ef.color;
+      ctx.beginPath();
+      ctx.arc(ef.x, ef.y, ef.radius, 0, Math.PI*2);
+      ctx.fill();
+      // glow
+      const g = ctx.createRadialGradient(ef.x,ef.y,0,ef.x,ef.y,ef.radius*3);
+      g.addColorStop(0,ef.color+'88');
+      g.addColorStop(1,'transparent');
+      ctx.fillStyle=g;
+      ctx.beginPath();
+      ctx.arc(ef.x,ef.y,ef.radius*3,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    } else {
+      // Projectile
+      const p = ef.t/ef.maxT;
+      const cx = ef.x + (ef.tx-ef.x)*p;
+      const cy = ef.y + (ef.ty-ef.y)*p - Math.sin(p*Math.PI)*40;
+
+      if (ef.type === 'domain') {
+        // Domain expansion ring
+        ctx.save();
+        ctx.globalAlpha = Math.sin(p*Math.PI)*0.8;
+        const grd = ctx.createRadialGradient(cx,cy,0,cx,cy,80*p);
+        grd.addColorStop(0, ef.color+'cc');
+        grd.addColorStop(0.5, ef.color+'44');
+        grd.addColorStop(1,'transparent');
+        ctx.fillStyle=grd;
+        ctx.beginPath();
+        ctx.arc(cx,cy,80*p,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      } else {
+        // Energy orb
+        ctx.save();
+        ctx.globalAlpha = 0.9;
+        ctx.shadowColor = ef.color;
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = ef.color;
+        ctx.beginPath();
+        ctx.arc(cx,cy,8,0,Math.PI*2);
+        ctx.fill();
+        // Trail
+        for (let t=1; t<=5; t++) {
+          const tp = Math.max(0,p - t*0.04);
+          const tx2 = ef.x + (ef.tx-ef.x)*tp;
+          const ty2 = ef.y + (ef.ty-ef.y)*tp - Math.sin(tp*Math.PI)*40;
+          ctx.globalAlpha = (1-t/6)*0.5;
+          ctx.beginPath();
+          ctx.arc(tx2,ty2,8-t,0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      // Move name label
+      if (p > 0.1 && p < 0.9) {
+        ctx.save();
+        ctx.globalAlpha = Math.sin(p*Math.PI);
+        ctx.fillStyle = ef.color;
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(ef.label, cx, cy-20);
+        ctx.restore();
+      }
+    }
+    if (ef.t >= ef.maxT) remove.push(i);
+  });
+  remove.reverse().forEach(i => state.effects.splice(i,1));
+}
+
+function drawFighter(ctx, x, y, color, mirrored) {
+  ctx.save();
+  ctx.translate(x, y);
+  if (mirrored) ctx.scale(-1,1);
+
+  // Aura glow
+  const aura = ctx.createRadialGradient(0,-80,10,0,-80,90);
+  aura.addColorStop(0, color+'33');
+  aura.addColorStop(1, 'transparent');
+  ctx.fillStyle = aura;
+  ctx.fillRect(-90,-170,180,180);
+
+  // Floating effect
+  const bob = Math.sin(Date.now()*0.002)*3;
+  ctx.translate(0, bob);
+
+  ctx.strokeStyle = color;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  // Head
+  ctx.fillStyle = '#1a1020';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(0,-115,22,0,Math.PI*2);
+  ctx.fill(); ctx.stroke();
+
+  // Hair detail
+  ctx.strokeStyle = color+'99';
+  ctx.lineWidth = 1;
+  for (let a=-60; a<=60; a+=20) {
+    const rad = a * Math.PI/180;
+    ctx.beginPath();
+    ctx.moveTo(Math.sin(rad)*22,-115+Math.cos(rad)*22);
+    ctx.lineTo(Math.sin(rad)*28,-115+Math.cos(rad)*28);
+    ctx.stroke();
+  }
+
+  // Eyes
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(-7,-115,3,0,Math.PI*2);
+  ctx.arc(7,-115,3,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+
+  // Neck
+  ctx.beginPath();
+  ctx.moveTo(-5,-93); ctx.lineTo(-5,-85);
+  ctx.moveTo(5,-93); ctx.lineTo(5,-85);
+  ctx.stroke();
+
+  // Torso
+  ctx.fillStyle = '#12101a';
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(-18,-85);
+  ctx.lineTo(18,-85);
+  ctx.lineTo(22,-35);
+  ctx.lineTo(-22,-35);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+
+  // Belt
+  ctx.strokeStyle = color+'88';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(-22,-50); ctx.lineTo(22,-50);
+  ctx.stroke();
+
+  // Left arm
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 9;
+  ctx.beginPath();
+  ctx.moveTo(-18,-78);
+  ctx.quadraticCurveTo(-50,-60,-45,-20);
+  ctx.stroke();
+  // Hand
+  ctx.fillStyle = color+'aa';
+  ctx.beginPath(); ctx.arc(-45,-20,5,0,Math.PI*2); ctx.fill();
+
+  // Right arm (battle pose - forward)
+  ctx.lineWidth = 9;
+  ctx.beginPath();
+  ctx.moveTo(18,-78);
+  ctx.quadraticCurveTo(55,-55,60,-25);
+  ctx.stroke();
+  ctx.fillStyle = color+'aa';
+  ctx.beginPath(); ctx.arc(60,-25,5,0,Math.PI*2); ctx.fill();
+
+  // Left leg
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 11;
+  ctx.beginPath();
+  ctx.moveTo(-10,-35);
+  ctx.quadraticCurveTo(-18,0,-15,40);
+  ctx.stroke();
+  // Foot
+  ctx.lineWidth=5;
+  ctx.beginPath();
+  ctx.moveTo(-15,40); ctx.lineTo(-30,45); ctx.stroke();
+
+  // Right leg
+  ctx.lineWidth=11;
+  ctx.beginPath();
+  ctx.moveTo(10,-35);
+  ctx.quadraticCurveTo(18,0,15,40);
+  ctx.stroke();
+  ctx.lineWidth=5;
+  ctx.beginPath();
+  ctx.moveTo(15,40); ctx.lineTo(28,45); ctx.stroke();
+
+  // Cursed energy wisps
+  const t = Date.now()*0.003;
+  ctx.strokeStyle = color+'66';
+  ctx.lineWidth=1.5;
+  for (let i=0; i<3; i++) {
+    const a = t + i*2.1;
+    ctx.beginPath();
+    ctx.arc(0,-60, 50+Math.sin(a)*10, a, a+0.6);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════
+//  BACKGROUND PARTICLES
+// ═══════════════════════════════════════════════════
+
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx = pCanvas.getContext('2d');
+const bgParticles = [];
+function initBgParticles() {
+  pCanvas.width = window.innerWidth;
+  pCanvas.height = window.innerHeight;
+  for (let i=0; i<60; i++) {
+    bgParticles.push({
+      x: Math.random()*pCanvas.width,
+      y: Math.random()*pCanvas.height,
+      r: Math.random()*2+0.5,
+      vx: (Math.random()-0.5)*0.3,
+      vy: -Math.random()*0.5-0.1,
+      alpha: Math.random(),
+      color: Math.random()<0.5 ? '#8b5cf6' : '#c084fc'
+    });
+  }
+}
+function animateBg() {
+  pCtx.clearRect(0,0,pCanvas.width,pCanvas.height);
+  bgParticles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.y < 0) { p.y = pCanvas.height; p.x = Math.random()*pCanvas.width; }
+    p.alpha = 0.5 + Math.sin(Date.now()*0.001+p.x)*0.3;
+    pCtx.globalAlpha = p.alpha;
+    pCtx.fillStyle = p.color;
+    pCtx.beginPath(); pCtx.arc(p.x,p.y,p.r,0,Math.PI*2); pCtx.fill();
+  });
+  pCtx.globalAlpha = 1;
+  requestAnimationFrame(animateBg);
+}
+
+// ═══════════════════════════════════════════════════
+//  BATTLE LOG
+// ═══════════════════════════════════════════════════
+
+function clearLog() { document.getElementById('battle-log').innerHTML = ''; }
+function addLog(text, cls='') {
+  const log = document.getElementById('battle-log');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + cls;
+  entry.textContent = text;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════
+//  RESULT
+// ═══════════════════════════════════════════════════
+
+function showResult(win) {
+  state.animating = false;
+  const title = document.getElementById('result-title');
+  const msg = document.getElementById('result-msg');
+
+  if (win) {
+    title.textContent = '🏆 SIEG!';
+    title.className = 'win';
+    const quotes = [
+      `${state.enemy.name} wurde besiegt!`,
+      'Die Fluchkraft ist auf deiner Seite!',
+      'Ein würdiger Sieg für einen Jujutsu-Zauberer!'
+    ];
+    msg.textContent = quotes[Math.floor(Math.random()*quotes.length)];
+
+    // Check if more enemies
+    const nextBtn = document.querySelector('#result-screen .btn-row .btn');
+    if (state.currentEnemy >= ENEMIES.length-1) {
+      nextBtn.textContent = '🎉 NEUSTART';
+      nextBtn.onclick = () => { state.currentEnemy = 0; showScreen('select-screen'); };
+    } else {
+      nextBtn.textContent = 'NÄCHSTER GEGNER →';
+      nextBtn.onclick = nextEnemy;
+    }
+  } else {
+    title.textContent = '💀 NIEDERLAGE';
+    title.className = 'lose';
+    msg.textContent = `${state.enemy.name} war zu stark. Trainiere härter!`;
+  }
+
+  showScreen('result-screen');
+}
+
+function nextEnemy() {
+  state.currentEnemy = Math.min(state.currentEnemy + 1, ENEMIES.length-1);
+  startBattle();
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+
+window.addEventListener('resize', () => {
+  pCanvas.width = window.innerWidth;
+  pCanvas.height = window.innerHeight;
+});
+
+initBgParticles();
+animateBg();
+drawTitleScene();
+
+// Animate title periodically
+setInterval(() => {
+  if (document.getElementById('title-screen').classList.contains('active')) drawTitleScene();
+}, 2000);
+</script>
+</body>
+</html>
