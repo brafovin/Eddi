@@ -153,6 +153,14 @@ body {
   background:linear-gradient(160deg,#220040,#120028);
 }
 .char-card-canvas { width:120px; height:150px; border-radius:4px; background:#080015; display:block; margin-bottom:12px; }
+.char-grade-badge {
+  font-size:8px; letter-spacing:1.5px; font-weight:bold; text-align:center;
+  color:#ffd86a; background:linear-gradient(90deg,#3a1a00,#553300,#3a1a00);
+  border:1px solid #ffaa3366; border-radius:3px; padding:2px 6px; margin-bottom:6px;
+  text-shadow:0 0 8px #ffaa3388; background-size:200% 100%;
+  animation:gradeShimmer 3s linear infinite;
+}
+@keyframes gradeShimmer { 0%{ background-position:0% 0; } 100%{ background-position:200% 0; } }
 .char-name { font-size:13px; font-weight:bold; color:#e0d0ff; text-align:center; }
 .char-title-tag { font-size:9px; color:#8844cc; letter-spacing:2px; text-align:center; margin:3px 0 8px; }
 .char-lore { font-size:9px; color:#6040a0; text-align:center; line-height:1.55; margin-bottom:10px; }
@@ -912,7 +920,7 @@ const GS = {
   enemyLastMove: null,
   jackpotMode: 0,
   jackpotSavedMoves: null,
-  stats: {dmg:0, moves:0, turns:0, killed:0},
+  stats: {dmg:0, moves:0, turns:0, killed:0, maxHit:0, crits:0, tookDamage:false},
 
   // status arrays  [{type,turns,...}]
   pStatuses: [],
@@ -4240,6 +4248,13 @@ function showCharSelect(){
 // ============================================================
 //  CHARACTER SELECT
 // ============================================================
+const CHAR_GRADE={
+  gojo:'SPECIAL GRADE', yuta:'SPECIAL GRADE', sukuna:'SPECIAL GRADE',
+  yuji:'UNRANKED → 1', megumi:'GRADE 1', nobara:'GRADE 3',
+  hakari:'GRADE 1', mahito:'SPECIAL GRADE CURSE', jogo:'SPECIAL GRADE CURSE',
+  mahoraga:'DIVINE GENERAL'
+};
+
 function buildCharGrid(){
   const grid=document.getElementById('char-grid');
   grid.innerHTML='';
@@ -4254,7 +4269,9 @@ function buildCharGrid(){
     card.appendChild(cvs);
 
     const sv=ch.sv;
+    const grade=CHAR_GRADE[ch.id]||ch.title||'';
     card.innerHTML+=`
+      <div class="char-grade-badge">${grade}</div>
       <div class="char-name">${ch.name}</div>
       <div class="char-title-tag">${ch.title}</div>
       <div class="char-lore">${ch.lore}</div>
@@ -4288,7 +4305,7 @@ function startGame(){
   sfxMenu();
   GS.storyMode=false;
   GS.enemyIdx=0;
-  GS.stats={dmg:0,moves:0,turns:0,killed:0};
+  GS.stats={dmg:0,moves:0,turns:0,killed:0,maxHit:0,crits:0,tookDamage:false};
   const charDef=CHARS.find(c=>c.id===GS.selectedChar);
   GS.player=applyUpgrades(JSON.parse(JSON.stringify(charDef)));
   GS.bonusTurn=false;
@@ -4621,6 +4638,7 @@ function applyPDmg(dmg, moveType){
     spawnFloatNum(582, 180, '-'+ref, '#00ccff', false);
   }
   GS.player.hp-=dmg;
+  if(dmg>0)GS.stats.tookDamage=true;
   if(GS.player.hp<0)GS.player.hp=0;
   playerHit(); flashCharOverlay('player');
   triggerShake(dmg>40?12:8);
@@ -4631,6 +4649,7 @@ function applyEDmg(dmg){
   GS.enemy.hp-=dmg;
   if(GS.enemy.hp<0)GS.enemy.hp=0;
   GS.stats.dmg+=dmg;
+  if(dmg>(GS.stats.maxHit||0))GS.stats.maxHit=dmg;
   enemyHit(); flashCharOverlay('enemy');
   spawnHitEffect(582, 258-42, (GS.player&&GS.player.color)||'#ffffff');
   spawnFloatNum(582+(Math.random()-0.5)*30, 155, '-'+dmg, '#ffcc00', dmg>40);
@@ -4786,6 +4805,7 @@ function execPlayerMove(key,move,cb){
   const p=GS.player,e=GS.enemy;
   const px=195,py=258,ex=582,ey=258;
   const crit=isCrit();
+  if(crit)GS.stats.crits=(GS.stats.crits||0)+1;
 
   // Boogie Woogie — position swap that stuns the enemy.
   if(move.type==='swap'){
@@ -5249,24 +5269,48 @@ function doEnemyTurn(cb){
     GS.animating=false; cb(); return;
   }
 
-  const mkey=chooseEnemyMove(e,p);
-  const move=e.moves[mkey];
-  if(move.cost) e.ce=Math.max(0,e.ce-move.cost);
-  sfxCursed();
-  logMsg(e.name+' uses '+move.name+'!','le2');
-  execEnemyMove(mkey,move,e,p,()=>{
-    GS.animating=false; cb();
-  });
+  // brief "thinking" pause so the enemy turn feels deliberate
+  setTimeout(()=>{
+    const mkey=chooseEnemyMove(e,p);
+    const move=e.moves[mkey];
+    if(move.cost) e.ce=Math.max(0,e.ce-move.cost);
+    sfxCursed();
+    logMsg(e.name+' uses '+move.name+'!','le2');
+    execEnemyMove(mkey,move,e,p,()=>{
+      GS.animating=false; cb();
+    });
+  },300);
 }
 
 function chooseEnemyMove(e,p){
   const hpPct=e.hp/e.maxHp;
+  const pHpPct=p.hp/p.maxHp;
   const m=e.moves;
+
+  // Low HP — prioritize survival: heal or defensive special if available.
+  if(hpPct<0.30){
+    if(m.s2&&m.s2.heal&&e.ce>=(m.s2.cost||30))return's2';
+    if(m.s1&&m.s1.heal&&e.ce>=(m.s1.cost||25))return's1';
+  }
+
+  // Player is nearly dead — go for the kill with the strongest available move.
+  if(pHpPct<0.30){
+    const ultCost=m.ultimate.cost||60;
+    if(e.ce>=ultCost)return'ultimate';
+    // pick the strongest damaging special we can afford
+    const cand=['s2','s1'].filter(k=>m[k]&&!m[k].heal&&e.ce>=(m[k].cost||25));
+    if(cand.length){
+      cand.sort((a,b)=>(m[b].dmg||0)-(m[a].dmg||0));
+      return cand[0];
+    }
+  }
 
   // Try ultimate
   const ultCost=m.ultimate.cost||60;
   if(e.ce>=ultCost){
     if(hpPct<0.45&&Math.random()<0.45)return'ultimate';
+    // when CE is maxed out, more eager to unleash the ultimate
+    if(e.ce>=e.maxCe&&Math.random()<0.5)return'ultimate';
     if(Math.random()<0.18)return'ultimate';
   }
 
@@ -5452,9 +5496,14 @@ function onEnemyDead(){
   // then stop it before the screen transitions
   setTimeout(()=>{ if(rafId)cancelAnimationFrame(rafId); }, 1100);
   GS.stats.killed++;
-  const earned=10+Math.floor(Math.random()*21); // 10-30 coins
+  let earned=10+Math.floor(Math.random()*21); // 10-30 coins base
+  const bonuses=[];
+  if((GS.stats.maxHit||0)>=100){ earned+=5; bonuses.push('+5 heavy hit (100+ dmg)'); }
+  if(!GS.stats.tookDamage){ earned+=20; bonuses.push('+20 flawless (no damage taken)'); }
+  if((GS.stats.crits||0)>0){ const cbonus=2*GS.stats.crits; earned+=cbonus; bonuses.push('+'+cbonus+' criticals ('+GS.stats.crits+')'); }
   GS.coins+=earned; saveProgress();
   logMsg('💰 +'+earned+' coins! (Total: '+GS.coins+')','ls');
+  bonuses.forEach(b=>logMsg('   ⭐ Bonus '+b,'ls'));
   spawnFloatCoin(582, 150, earned);
   sfxVictory();
   addAnim('explode',{x:582,y:216,maxR:190,color:GS.enemy.color,dur:62});
@@ -5526,7 +5575,7 @@ function doRestart(){
   if(charDef)GS.player=applyUpgrades(JSON.parse(JSON.stringify(charDef)));
   GS.bonusTurn=false;
   GS.enemyIdx=0;
-  GS.stats={dmg:0,moves:0,turns:0,killed:0};
+  GS.stats={dmg:0,moves:0,turns:0,killed:0,maxHit:0,crits:0,tookDamage:false};
   if(GS.player)initBattle();
   else showCharSelect();
 }
@@ -5572,7 +5621,7 @@ let storyState = {chapter:0, line:0};
 function startStory(){
   sfxMenu();
   if(!GS.selectedChar) GS.selectedChar='yuji';
-  GS.stats={dmg:0,moves:0,turns:0,killed:0};
+  GS.stats={dmg:0,moves:0,turns:0,killed:0,maxHit:0,crits:0,tookDamage:false};
   GS.player=JSON.parse(JSON.stringify(CHARS.find(c=>c.id===GS.selectedChar)));
   GS.storyMode=true;
   storyState={chapter:0, line:0};
