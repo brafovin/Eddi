@@ -722,6 +722,21 @@ const CHARS = [
       s2:      {name:'◆ Rika Manifest',     cost:34, dmg:[36,52], type:'cursed', stun:0.25},
       ultimate:{name:'★ True Mutual Love',  cost:60, dmg:[78,108], type:'ultimate', heal:40}
     }
+  },
+  {
+    id:'todo', name:'Aoi Todo',
+    title:'東堂葵 · BOOGIE WOOGIE',
+    lore:'Grade 1 sorcerer. Claps to swap — Boogie Woogie. Yuji\'s best friend and rival, a towering powerhouse of raw strength.',
+    color:'#cc6600', glow:'#ff880088',
+    hp:200, maxHp:200, ce:110, maxCe:110,
+    atk:52, def:38, spd:48,
+    sv:{hp:200,atk:52,def:38,spd:48},
+    moves:{
+      basic:   {name:'⚔ Thunderclap',            cost:0,  dmg:[28,38],  type:'physical'},
+      s1:      {name:'✦ Boogie Woogie',          cost:22, dmg:[0,0],    type:'swap'},
+      s2:      {name:'◈ Divergent Fist (Synced)',cost:30, dmg:[55,75],  type:'physical'},
+      ultimate:{name:'★ Black Flash Combo',      cost:55, dmg:[90,130], type:'ultimate'}
+    }
   }
 ];
 
@@ -1638,6 +1653,75 @@ yuta:[
 '   kk     kk    ',
 ' kkkk     kkkk  ',
 ' kkkk     kkkk  ',
+]],
+todo:[
+[// idle — tall, imposing, short dark spiky hair, dark uniform
+'    kkkkkkkk    ',
+'   kknnnnnnkk   ',
+'  kknnnnnnnnnk  ',
+'  kknNnnnnnNnk  ',
+'  kknnnnnnnnkk  ',
+'   kknknnknkk   ',
+'    kkkkkkkk    ',
+'    kkkkkkkk    ',
+'   kkKKKKKKkk   ',
+'  kkKKKKKKKKkk  ',
+' kkKKKKKKKKKKkk ',
+' kkKKKKKKKKKKkk ',
+' kkKKKKKKKKKKkk ',
+'  kKKnnKKnnKKk  ',
+'  kKKnnKKnnKKk  ',
+'  kKKnnKKnnKKk  ',
+'  kKKKKKKKKKk   ',
+'  kKKKKKKKKKk   ',
+'   kKKKKKKKk    ',
+'   kKKKKKKKk    ',
+'   kKKKKKKKk    ',
+'   kKKKKKKKk    ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkkkkkkkkkkk  ',
+'  kkkkkkkkkkkk  ',
+'  kkkkkkkkkkkk  ',
+],
+[// attack — clapping, arms spread wide, leaning forward
+'    kkkkkkkk    ',
+'   kknnnnnnkk   ',
+'  kknnnnnnnnnk  ',
+'  kknNnnnnnNnk  ',
+'  kknnnnnnnnkk  ',
+'   kknknnknkk   ',
+'    kkkkkkkk    ',
+'oo  kkkkkkkk  oo',
+'ookkkKKKKKKkkkoo',
+'OkkkKKKKKKKKkkkO',
+'kkKKKKKKKKKKKKkk',
+'kkKKKKKKKKKKKKkk',
+' kkKKKKKKKKKKkk ',
+'  kKKnnKKnnKKk  ',
+'  kKKnnKKnnKKk  ',
+'  kKKnnKKnnKKk  ',
+'  kKKKKKKKKKk   ',
+'  kKKKKKKKKKk   ',
+'   kKKKKKKKk    ',
+'   kKKKKKKKk    ',
+'   kKKKKKKKk    ',
+'   kKKKKKKKk    ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkKKkkkKKkk   ',
+'  kkkkkkkkkkkk  ',
+'  kkkkkkkkkkkk  ',
+'  kkkkkkkkkkkk  ',
 ]]};
 
 // Divine Dog sprite (12×9, 2 run frames)
@@ -3283,13 +3367,99 @@ function doPlayerMove(key){
   });
 }
 
+// Per-character, per-move signature animation flourishes.
+// Fired in addition to (or instead of) the generic branch anims so every
+// single move for every character gets a distinct, fitting visual.
+function playMoveFX(id,key,c){
+  const {px,py,ex,ey}=c;
+  const S=(sx,sy,tx,ty,color,size,dur)=>addAnim('strike',{sx,sy,tx,ty,color,size,dur});
+  const map={
+    yuji:{
+      basic:()=>addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ff4466',size:14,dur:20}),
+      s1:()=>{ // Divergent Fist — fist + shockwave rings
+        addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ffaa44',size:16,dur:20});
+        setTimeout(()=>addAnim('explode',{x:ex,y:ey-42,maxR:95,color:'#ffaa44',dur:34}),220);
+      },
+      s2:()=>{ // Black Flash — black/purple bigger fist + dark explode
+        addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#7733cc',size:22,dur:22});
+        setTimeout(()=>addAnim('explode',{x:ex,y:ey-42,maxR:115,color:'#330055',dur:40}),200);
+      }
+    },
+    megumi:{
+      basic:()=>addAnim('shadow',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#222255',size:13,dur:22}),
+      s1:()=>{ // Divine Dog — shadow + summon rushing
+        addAnim('shadow',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#001133',size:14,dur:22});
+        addAnim('summon',{x:ex-60,y:ey-22,color:'#3366cc',dur:30});
+      },
+      s2:()=>addAnim('wave',{x:ex,y:ey-42,maxR:110,color:'#6633cc',dur:32}) // Chimera Shadow
+    },
+    nobara:{
+      basic:()=>addAnim('nail',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ff9922',size:12,dur:20}),
+      s1:()=>{ // Straw Doll — multiple nails fanning out
+        for(let i=0;i<4;i++) addAnim('nail',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32-((i-1.5)*22),color:'#ff9922',size:11,dur:22});
+      },
+      s2:()=>addAnim('explode',{x:ex,y:ey-42,maxR:95,color:'#ff5522',dur:36}) // Hairpin resonance
+    },
+    gojo:{
+      basic:()=>addAnim('beam',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-52,color:'#00ccff',dur:30}),
+      s1:()=>addAnim('wave',{x:ex,y:ey-42,maxR:150,color:'#cc66ff',dur:38}), // Hollow Purple wide
+      s2:()=>{ // Red/Blue split
+        addAnim('beam',{sx:px+42,sy:py-58,tx:ex-42,ty:ey-58,color:'#ff2244',dur:30});
+        addAnim('beam',{sx:px+42,sy:py-46,tx:ex-42,ty:ey-46,color:'#2266ff',dur:30});
+      }
+    },
+    sukuna:{
+      basic:()=>S(px+42,py-42,ex-32,ey-32,'#ff3322',10,18),
+      s1:()=>addAnim('slash',{x:ex,y:ey-42,color:'#ff0022',dur:24,big:true}), // Malevolent Shrine massive
+      s2:()=>{ for(let i=0;i<3;i++) setTimeout(()=>S(px+42,py-42,ex-32,ey-32,'#ff2244',9,14),i*120); } // Dismantle multi
+    },
+    hakari:{
+      basic:()=>addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ffcc00',size:14,dur:20}),
+      s1:()=>addAnim('explode',{x:ex,y:ey-42,maxR:110,color:'#ffcc00',dur:38}), // Jackpot
+      s2:()=>{ // Reversal Ritual — beam + explode
+        addAnim('beam',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-52,color:'#ffcc00',dur:30});
+        setTimeout(()=>addAnim('explode',{x:ex,y:ey-42,maxR:100,color:'#ffee66',dur:36}),200);
+      }
+    },
+    yuta:{
+      basic:()=>addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ff7799',size:14,dur:20}),
+      s1:()=>addAnim('beam',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-52,color:'#ffffff',dur:30}), // Copy
+      s2:()=>addAnim('summon',{x:ex-60,y:ey-22,color:'#ff4488',dur:34}) // Rika Manifest
+    },
+    todo:{
+      basic:()=>addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ff8800',size:16,dur:20}),
+      s1:()=>{ addAnim('wave',{x:ex,y:ey-42,maxR:120,color:'#ff8800',dur:34}); triggerFlash('#ffaa44',0.4); }, // Boogie Woogie
+      s2:()=>{ // Synced Divergent Fist
+        addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ff8800',size:20,dur:22});
+        setTimeout(()=>addAnim('explode',{x:ex,y:ey-42,maxR:105,color:'#ffaa44',dur:38}),200);
+      }
+    }
+  };
+  const fn=map[id]&&map[id][key];
+  if(fn) fn();
+}
+
 function execPlayerMove(key,move,cb){
   const p=GS.player,e=GS.enemy;
   const px=195,py=258,ex=582,ey=258;
   const crit=isCrit();
 
+  // Todo's Boogie Woogie — position swap that stuns the enemy.
+  if(key==='s1'&&move.type==='swap'){
+    playMoveFX(p.id,'s1',{px,py,ex,ey});
+    spawnP(ex,ey-42,16,'#ff8800',6,50);
+    setTimeout(()=>{
+      addStatus(GS.eStatuses,'stun',{turns:1});
+      triggerShake(8);
+      logMsg('Boogie Woogie! Todo claps — enemy is confused and loses their next turn!','lp');
+      sfxBlock(); updateBars(); setTimeout(cb,420);
+    },300);
+    return;
+  }
+
   if(key==='basic'){
     playerAttack(28);
+    playMoveFX(p.id,'basic',{px,py,ex,ey});
     addAttackAnim(p.id,{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:p.color,size:12,dur:22});
     setTimeout(()=>{
       const dmg=calcDmg(move.dmg,p.atk,e.def,crit);
@@ -3303,6 +3473,7 @@ function execPlayerMove(key,move,cb){
     },320);
 
   } else if(key==='s1'){
+    playMoveFX(p.id,'s1',{px,py,ex,ey});
     if(move.type==='gamble'){
       // Hakari Jackpot — 50% deal 80 dmg + bonus turn, 50% heal 30
       addAnim('charge',{x:px+40,y:py-50,maxR:60,color:'#ffcc00',dur:24});
@@ -3363,6 +3534,7 @@ function execPlayerMove(key,move,cb){
     }
 
   } else if(key==='s2'){
+    playMoveFX(p.id,'s2',{px,py,ex,ey});
     if(move.ceSteal){
       // Nobara Resonance
       addAnim('explode',{x:ex,y:ey-42,maxR:85,color:'#ff9900',dur:35});
@@ -3610,6 +3782,31 @@ function execPlayerMove(key,move,cb){
           },440);
         },500);
       },400);
+
+    } else if(p.id==='todo'){
+      // ★ Black Flash Combo — synchronized maximum-output flurry
+      addAnim('charge',{x:px+40,y:py-58,maxR:90,color:'#ff8800',dur:36});
+      spawnSpiralP(px,py-50,32,'#ff8800');
+      setTimeout(()=>{
+        addAnim('domain',{kanji:'拍',name:'BLACK FLASH COMBO',dur:84,color:'#ff8800'});
+        triggerFlash('#ffaa44',0.6);
+        setTimeout(()=>{
+          let hits=3;
+          const burst=()=>{
+            if(hits<=0){ triggerShake(16); updateBars(); setTimeout(cb,780); return; }
+            addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:hits===1?'#7733cc':'#ff8800',size:20,dur:18});
+            setTimeout(()=>{
+              const d=calcDmg(move.dmg,p.atk*0.5,e.def,isCrit());
+              applyEDmg(d);
+              spawnFireP(ex,ey-42,22); triggerShake(8); triggerFlash(hits===1?'#330055':'#ffaa44',0.4);
+              addAnim('explode',{x:ex,y:ey-42,maxR:hits===1?170:100,color:hits===1?'#7733cc':'#ff8800',dur:hits===1?52:30});
+              logMsg('Black Flash combo strike — '+d+' DAMAGE!','lu');
+              updateBars(); hits--; burst();
+            },240);
+          };
+          burst();
+        },480);
+      },380);
     }
   }
 }
