@@ -2462,7 +2462,7 @@ const CHAR_IMG_URLS = {
 };
 // Mahoraga gets a larger display size
 const CHAR_IMG_SIZE = {
-  mahoraga: {w:200, h:'auto'},
+  mahoraga: {w:220, h:'auto'},
   default:  {w:130, h:'auto'},
 };
 
@@ -2483,6 +2483,14 @@ function setCharOverlay(which, id, glowColor){
     el.src = url;
     el.style.width = size.w + 'px';
     el.style.setProperty('--char-glow', glowColor||'#7b2fff');
+    if(id==='mahoraga'){
+      // Mahoraga gets an intense blue-white aura and sits a touch lower/centered.
+      el.style.filter='drop-shadow(0 0 28px #aaddff) drop-shadow(0 0 12px #fff) drop-shadow(0 0 6px #334488) drop-shadow(0 0 4px #000)';
+      el.style.bottom='-6px';
+    } else {
+      el.style.filter='';
+      el.style.bottom='0';
+    }
     el.style.display = 'block';
     el.onerror = ()=>{ el.style.display='none'; }; // hide if URL fails
   } else {
@@ -2662,6 +2670,23 @@ function drawBg(ctx, w, h) {
   ctx.fillStyle='#120028'; ctx.fillRect(0,h-55,w,55);
   ctx.strokeStyle='#330066'; ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(0,h-55);ctx.lineTo(w,h-55);ctx.stroke();
+
+  // animated cursed-energy wisps drifting upward, tinted by the player's color
+  const tint = (GS && GS.player && GS.player.color) ? GS.player.color : '#7b2fff';
+  const tt = Date.now()*0.001;
+  ctx.save();
+  for(let i=0;i<10;i++){
+    const seed=i*73.13;
+    const wx=((Math.sin(seed)*0.5+0.5)*w);
+    const wy=(h - ((tt*18 + i*47) % (h+40)));
+    const r=8+ (Math.sin(tt*1.3+i)*0.5+0.5)*14;
+    const a=0.10+ (Math.sin(tt*0.9+seed)*0.5+0.5)*0.10;
+    const wg=ctx.createRadialGradient(wx,wy,0,wx,wy,r);
+    wg.addColorStop(0,tint+'55'); wg.addColorStop(1,'transparent');
+    ctx.globalAlpha=a; ctx.fillStyle=wg;
+    ctx.beginPath(); ctx.arc(wx,wy,r,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
 
   // kanji watermark
   ctx.save();
@@ -4411,18 +4436,62 @@ function checkMahoraga(){
   if(GS.player && GS.player.id==='megumi' && !GS.mahoragaActive && GS.player.hp>0
      && GS.player.hp <= 20){
     GS.mahoragaActive=true;
-    // Megumi steps back — Mahoraga takes over the fight, keeping his HP/CE/stats.
-    GS.player = { ...GS.player, ...MAHORAGA_CHAR,
-      hp: GS.player.hp, maxHp: GS.player.maxHp,
-      ce: GS.player.ce, maxCe: GS.player.maxCe,
-      atk: GS.player.atk, def: GS.player.def, spd: GS.player.spd };
-    renderMoves();
-    setCharOverlay('player','mahoraga','#aaddff');
-    addAnim('domain',{kanji:'羅', name:'MAHORAGA MANIFESTS', dur:60, color:'#334488'});
-    triggerFlash('#ffffff',0.7);
-    triggerShake(16);
-    spawnP(195,216,40,'#aaddff',5,60); spawnSpiralP(195,216,28,'#334488');
-    logMsg('八握剣 — Megumi steps back. MAHORAGA takes the field!','lu');
+    GS.animating=true; // lock player input during the spawn sequence
+    if(typeof lockBtns==='function') lockBtns();
+
+    // ---- Phase 1: Megumi retreats into the shadows (350ms) ----
+    const pEl=document.getElementById('char-player-img');
+    if(pEl){
+      pEl.style.transition='transform 0.3s ease, opacity 0.3s ease, filter 0.3s ease';
+      pEl.style.transform='translateX(-70px) scale(0.7)';
+      pEl.style.opacity='0.05';
+    }
+    triggerFlash('#ffffff',0.85,6);
+    logMsg('...Megumi steps back into the shadows...','ls');
+
+    setTimeout(()=>{
+      // ---- Phase 2: black domain-style flash (600ms) ----
+      addAnim('domain',{kanji:'羅', name:'MAHORAGA MANIFESTS', dur:70, color:'#334488'});
+      triggerFlash('#000022',0.97,9);
+      triggerShake(22);
+
+      setTimeout(()=>{
+        // ---- Phase 3: Mahoraga emerges, keeping HP/CE, gaining stats ----
+        GS.player = { ...GS.player, ...MAHORAGA_CHAR,
+          hp: GS.player.hp, maxHp: GS.player.maxHp,
+          ce: GS.player.ce, maxCe: GS.player.maxCe,
+          atk: GS.player.atk+20, def: GS.player.def+15, spd: GS.player.spd };
+        renderMoves();
+
+        setCharOverlay('player','mahoraga','#aaddff');
+        const mEl=document.getElementById('char-player-img');
+        if(mEl){
+          mEl.style.transition='none';
+          mEl.style.transform='translateX(-90px) scale(0.3)';
+          mEl.style.opacity='0';
+          mEl.style.width='220px';
+          // force reflow so the "none" transition state applies before animating in
+          void mEl.offsetWidth;
+          setTimeout(()=>{
+            mEl.style.transition='transform 0.6s cubic-bezier(0.2,1.5,0.4,1), opacity 0.4s ease, filter 0.3s';
+            mEl.style.transform='translateX(0) scale(1)';
+            mEl.style.opacity='1';
+          },50);
+        }
+
+        spawnP(195,216,60,'#aaddff',6,80);
+        spawnSpiralP(195,216,40,'#334488');
+        triggerFlash('#aaddff',0.75,5);
+        triggerShake(18);
+        logMsg('八握剣 異戒神将 魔虚羅 — MAHORAGA HAS MANIFESTED!','lu');
+        updateBars();
+
+        setTimeout(()=>{
+          GS.animating=false;
+          updateButtons();
+        },800);
+      },600);
+    },350);
   }
 }
 
@@ -4451,7 +4520,8 @@ function applyPDmg(dmg, moveType){
   }
   GS.player.hp-=dmg;
   playerHit();
-  triggerShake(6);
+  triggerShake(dmg>40?12:8);
+  triggerFlash('#ff4466', dmg>40?0.4:0.25, 3);
   spawnFloatNum(195+(Math.random()-0.5)*30, 155, '-'+dmg, '#ff4466', dmg>40);
 }
 function applyEDmg(dmg){
