@@ -533,6 +533,10 @@ body {
       <button class="mbtn mbtn-s1" id="btn-fuga" onclick="doFugaCounter()" style="display:none;width:100%;margin-top:6px;">
         ★ Fuga Counter<span class="mcost">風雅</span>
       </button>
+      <label style="font-size:9px;color:#5030a0;margin-top:6px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+        <input type="checkbox" id="shenanigans-toggle" checked onchange="GS.shenanigansEnabled=this.checked" style="accent-color:#7b2fff;">
+        SHENANIGANS
+      </label>
       <div class="turn-ind" id="turn-ind">YOUR TURN ⚡</div>
     </div>
     <div class="log-panel">
@@ -4903,26 +4907,34 @@ function doPlayerMove(key){
     if(GS.cullingRegen>0){ GS.cullingRegen--; if(!GS.cullingRegen) logMsg('Rule expired: CE regen normal.','ls'); }
     if(GS.gojoVibing>0){ GS.gojoVibing--; }
     maybeTriggerShenanigan();
-    if(GS.bonusTurn){
-      GS.bonusTurn=false;
-      logMsg('🎰 An extra turn is granted!','lu');
-      GS.playerTurn=true; GS.animating=false; updateBars();
-      return;
-    }
-    if(e.hp<=0){onEnemyDead();return;}
-    GS.playerTurn=false; updateBars();
-    setTimeout(()=>{
-      tickStatuses('enemy');
-      updateBars();
-      if(e.hp<=0){onEnemyDead();return;}
-      doEnemyTurn(()=>{
-        tickStatuses('player');
-        updateBars();
-        if(p.hp<=0){onPlayerDead();return;}
-        e.ce=Math.min(e.maxCe,e.ce+14);
+    // An async shenanigan may have set animating=true; wait for it to finish
+    // before resolving the bonus-turn / enemy-turn flow.
+    const proceed=()=>{
+      if(GS.animating){ setTimeout(proceed,120); return; }
+      const en=GS.enemy, pl=GS.player; // re-fetch (Kenjaku may have swapped the enemy)
+      if(GS.bonusTurn){
+        GS.bonusTurn=false;
+        logMsg('🎰 An extra turn is granted!','lu');
         GS.playerTurn=true; GS.animating=false; updateBars();
-      });
-    },550);
+        return;
+      }
+      if(en.hp<=0){onEnemyDead();return;}
+      if(pl.hp<=0){onPlayerDead();return;}
+      GS.playerTurn=false; updateBars();
+      setTimeout(()=>{
+        tickStatuses('enemy');
+        updateBars();
+        if(GS.enemy.hp<=0){onEnemyDead();return;}
+        doEnemyTurn(()=>{
+          tickStatuses('player');
+          updateBars();
+          if(GS.player.hp<=0){onPlayerDead();return;}
+          GS.enemy.ce=Math.min(GS.enemy.maxCe,GS.enemy.ce+14);
+          GS.playerTurn=true; GS.animating=false; updateBars();
+        });
+      },550);
+    };
+    proceed();
   });
 }
 
