@@ -835,6 +835,7 @@ const GS = {
   playerTurn: true,
   battleActive: false,
   animating: false,
+  hitstopUntil: 0,
   fugazable: false,
   enemyLastMove: null,
   jackpotMode: 0,
@@ -929,7 +930,9 @@ let particles = [];
 let anims = [];
 let floatNums = [];
 let shakeX=0, shakeY=0;
-let flashAlpha=0, flashColor='#fff';
+let flashAlpha=0, flashColor='#fff', flashFrames=0;
+let afterimages=[];
+let eDeathFlicker=0;
 let idleT = 0;
 let rafId = null;
 let pLean=0, eLean=0; // attack lean offsets
@@ -3365,6 +3368,19 @@ function drawA(ctx,w,h){
         ctx.fillStyle=d.color;
         ctx.beginPath(); ctx.arc(tx2,ty2,Math.max(0.5,sz*0.5*(1-i*0.075)),0,Math.PI*2); ctx.fill();
       }
+      // jagged lightning-like sparks crackling along the trail
+      ctx.globalAlpha=0.6*(1-t)+0.2;
+      ctx.strokeStyle='#aaffff'; ctx.lineWidth=1; ctx.shadowColor=d.color; ctx.shadowBlur=8;
+      let lpx=px, lpy=py;
+      for(let i=1;i<=4;i++){
+        const tp=Math.max(0,t-i*0.05);
+        const nx=d.sx+(d.tx-d.sx)*tp, ny=d.sy+(d.ty-d.sy)*tp-Math.sin(tp*Math.PI)*30;
+        ctx.beginPath(); ctx.moveTo(lpx,lpy);
+        const midx=(lpx+nx)/2+(Math.random()-0.5)*16, midy=(lpy+ny)/2+(Math.random()-0.5)*16;
+        ctx.lineTo(midx,midy); ctx.lineTo(nx,ny); ctx.stroke();
+        lpx=nx; lpy=ny;
+      }
+      ctx.shadowBlur=0;
       ctx.globalAlpha=1;
       // outer glow
       const grd=ctx.createRadialGradient(px,py,0,px,py,sz*pulse*2.4);
@@ -3762,9 +3778,14 @@ function drawA(ctx,w,h){
       // Full-screen domain expansion overlay
       ctx.globalAlpha = t<0.15 ? t/0.15 : t>0.85 ? (1-t)/0.15 : 1;
       ctx.globalAlpha *= 0.82;
-      // Dark overlay
+      // Dark overlay (near-black during domain)
       ctx.fillStyle='#000000';
       ctx.fillRect(0,0,w,h);
+      // vignette: dark radial gradient pulling corners to black
+      const vg=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.2,w/2,h/2,Math.max(w,h)*0.7);
+      vg.addColorStop(0,'transparent'); vg.addColorStop(1,'#000000');
+      const va=ctx.globalAlpha; ctx.globalAlpha=Math.min(1,va*1.6);
+      ctx.fillStyle=vg; ctx.fillRect(0,0,w,h); ctx.globalAlpha=va;
       // colored veins radiating from center
       ctx.globalAlpha *= 0.6;
       for(let i=0;i<12;i++){
@@ -3833,6 +3854,25 @@ function drawA(ctx,w,h){
       ctx.lineTo(d.x+Math.cos(d.ang)*outer, d.y+Math.sin(d.ang)*outer);
       ctx.stroke(); ctx.lineCap='butt';
 
+    } else if(a.type==='speedlines'){
+      // anime burst: radial motion lines emanating from a point
+      const p=t;
+      ctx.globalAlpha=(1-p)*0.7;
+      const cx=d.x, cy=d.y, count=16;
+      ctx.shadowColor=d.color||'#ffffff'; ctx.shadowBlur=6; ctx.lineCap='round';
+      for(let i=0;i<count;i++){
+        const ang=(i/count)*Math.PI*2;
+        const len=(80+((i*37)%60))*(1-p*0.3);
+        const startR=20+p*30;
+        ctx.strokeStyle=d.color||'#ffffff';
+        ctx.lineWidth=1.5+(i%3===0?1:0);
+        ctx.beginPath();
+        ctx.moveTo(cx+Math.cos(ang)*startR, cy+Math.sin(ang)*startR);
+        ctx.lineTo(cx+Math.cos(ang)*(startR+len), cy+Math.sin(ang)*(startR+len));
+        ctx.stroke();
+      }
+      ctx.lineCap='butt';
+
     } else if(a.type==='hitflash'){
       // bright impact flash
       const r=(d.r||35)*(0.4+t*0.9);
@@ -3847,16 +3887,18 @@ function drawA(ctx,w,h){
   updateFloatNums();
   drawFloatNums(ctx);
 
-  // screen flash
+  // screen flash (impact frames: hold for flashFrames, then fade)
   if(flashAlpha>0.01){
     ctx.save();ctx.globalAlpha=flashAlpha;ctx.fillStyle=flashColor;ctx.fillRect(0,0,w,h);ctx.restore();
   }
-  flashAlpha*=0.82;
+  if(flashFrames>0){ flashFrames--; } // hold bright for N frames
+  else { flashAlpha*=0.82; }
   if(flashAlpha<0.01)flashAlpha=0;
 }
 
 function triggerShake(i=8){shakeX=i;shakeY=i/2;}
-function triggerFlash(c='#fff',a=0.5){flashColor=c;flashAlpha=a;}
+function triggerFlash(c='#fff',a=0.5,frames=0){flashColor=c;flashAlpha=a;flashFrames=frames;}
+function hitstop(ms=110){ GS.hitstopUntil=Date.now()+ms; }
 
 let pHitF=0, eHitF=0;
 
@@ -3864,6 +3906,7 @@ let pHitF=0, eHitF=0;
 function playerAttack(lean=22){
   pLean=lean; pAttackFrame=1;
   animCharOverlay('player', lean*0.4);
+  addAnim('speedlines',{x:195,y:216,color:GS.player?.color||'#ffffff',dur:14});
   setTimeout(()=>{ pLean=0; pAttackFrame=0; animCharOverlay('player',0); },400);
 }
 function enemyAttack(lean=-22){
@@ -3880,14 +3923,17 @@ function renderBattle(){
   if(GS.screen!=='battle')return;
   if(!bCanvas)return;
   const w=bCanvas.width, h=bCanvas.height;
+  const frozen = Date.now() < GS.hitstopUntil; // hitstop: render but don't advance timers
   const sx=shakeX>0.1?(Math.random()-0.5)*shakeX*2:0;
   const sy=shakeY>0.1?(Math.random()-0.5)*shakeY*2:0;
   shakeX*=0.82; shakeY*=0.82;
   if(Math.abs(shakeX)<0.1)shakeX=0;
 
   // Sprite animation tick
-  spriteTimer++;
-  if(spriteTimer>=SPRITE_FPS){ spriteTimer=0; spriteFrame=(spriteFrame+1)%2; }
+  if(!frozen){
+    spriteTimer++;
+    if(spriteTimer>=SPRITE_FPS){ spriteTimer=0; spriteFrame=(spriteFrame+1)%2; }
+  }
 
   bCtx.save();
   bCtx.translate(sx,sy);
@@ -3911,7 +3957,23 @@ function renderBattle(){
   // ── Draw player ──
   if(GS.player){
     const px=195+pLean, py=258+idleY;
-    const sc=pHitScale;
+    // afterimage trail during attack
+    if(pAttackFrame===1){
+      if(!frozen){
+        afterimages.unshift({x:px,y:py});
+        if(afterimages.length>3) afterimages.pop();
+      }
+      afterimages.forEach((ai,i)=>{
+        bCtx.save();
+        bCtx.globalAlpha=0.22*(1-i/afterimages.length);
+        bCtx.filter='brightness(0.4) saturate(2) hue-rotate(260deg)';
+        drawCharacter(bCtx,GS.player.id,1,ai.x,ai.y,PSCALE,false);
+        bCtx.filter='none'; bCtx.restore();
+      });
+    } else if(afterimages.length){ afterimages.length=0; }
+    // pulsing attack scale
+    const atkScale = pAttackFrame===1 ? 1+Math.sin(Date.now()*0.04)*0.05 : 1;
+    const sc=pHitScale*atkScale;
     bCtx.save();
     bCtx.translate(px,py); bCtx.scale(sc,sc); bCtx.translate(-px,-py);
     drawPixelAura(bCtx,px,py,GS.player.color,PSCALE);
@@ -3945,7 +4007,19 @@ function renderBattle(){
       bCtx.filter='none'; bCtx.restore();
       eHitF--;
     }
-    drawCharacter(bCtx,GS.enemy.id,eAttackFrame,ex,ey,ESCALE,true);
+    // death flicker: alternate visible/invisible, then fade out
+    let drawEnemy=true, eAlpha=1;
+    if(eDeathFlicker>0){
+      if(!frozen) eDeathFlicker--;
+      drawEnemy=(Math.floor(eDeathFlicker/2)%2===0);
+      eAlpha=eDeathFlicker/20;
+      if(!frozen&&Math.random()<0.6) spawnCurseP(ex,ey-42,2);
+    }
+    if(drawEnemy){
+      bCtx.save(); bCtx.globalAlpha=eAlpha;
+      drawCharacter(bCtx,GS.enemy.id,eAttackFrame,ex,ey,ESCALE,true);
+      bCtx.restore();
+    }
     bCtx.fillStyle=GS.enemy.color; bCtx.font='bold 10px monospace';
     bCtx.textAlign='center'; bCtx.shadowColor=GS.enemy.color; bCtx.shadowBlur=8;
     bCtx.fillText(GS.enemy.name, ex, ey+12);
@@ -3970,11 +4044,14 @@ function renderBattle(){
   }
 
   // lean / scale decay
-  pLean*=0.82; eLean*=0.82;
-  pHitScale+=(1-pHitScale)*0.22; eHitScale+=(1-eHitScale)*0.22;
+  if(!frozen){
+    pLean*=0.82; eLean*=0.82;
+    pHitScale+=(1-pHitScale)*0.22; eHitScale+=(1-eHitScale)*0.22;
+  }
 
-  updateP(); drawP(bCtx);
-  updateA(); drawA(bCtx,w,h);
+  drawP(bCtx);
+  drawA(bCtx,w,h);
+  if(!frozen){ updateP(); updateA(); }
   bCtx.restore();
   rafId=requestAnimationFrame(renderBattle);
 }
@@ -4081,6 +4158,7 @@ function startGame(){
 }
 
 function initBattle(){
+  eDeathFlicker=0; afterimages.length=0; GS.hitstopUntil=0;
   const enDef=ENEMIES[GS.enemyIdx];
   GS.enemy=JSON.parse(JSON.stringify(enDef));
   GS.pStatuses=[];
@@ -4365,6 +4443,11 @@ function applyEDmg(dmg){
   enemyHit();
   spawnHitEffect(582, 258-42, (GS.player&&GS.player.color)||'#ffffff');
   spawnFloatNum(582+(Math.random()-0.5)*30, 155, '-'+dmg, '#ffcc00', dmg>40);
+  // anime impact frame + hitstop
+  triggerFlash('#ffffff', dmg>40?1.0:0.95, dmg>40?4:3);
+  triggerShake(dmg>40?14:12);
+  hitstop(dmg>40?130:100);
+  addAnim('speedlines',{x:582,y:216,color:(GS.player&&GS.player.color)||'#ffffff',dur:12});
 }
 
 function addStatus(arr,type,data){
@@ -4427,9 +4510,18 @@ function playMoveFX(id,key,c){
         addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ffaa44',size:16,dur:20});
         setTimeout(()=>addAnim('explode',{x:ex,y:ey-42,maxR:95,color:'#ffaa44',dur:34}),220);
       },
-      s2:()=>{ // Black Flash — black/purple bigger fist + dark explode
+      s2:()=>{ // Black Flash — dark flash, CE distortion, then white impact + explosion
+        triggerFlash('#110022',0.9,2); // brief purple/black screen flash
         addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#7733cc',size:22,dur:22});
-        setTimeout(()=>addAnim('explode',{x:ex,y:ey-42,maxR:115,color:'#330055',dur:40}),200);
+        setTimeout(()=>{
+          // purple/black CE distortion rings
+          addAnim('wave',{x:ex,y:ey-42,maxR:90,color:'#220044',dur:26});
+          addAnim('wave',{x:ex,y:ey-42,maxR:130,color:'#7733cc',dur:30});
+          triggerFlash('#ffffff',1.0,3); // instant white impact frame
+          triggerShake(18); hitstop(150);
+          addAnim('speedlines',{x:ex,y:ey-42,color:'#aa55ff',dur:14});
+          addAnim('explode',{x:ex,y:ey-42,maxR:130,color:'#330055',dur:42});
+        },200);
       }
     },
     megumi:{
@@ -4448,7 +4540,10 @@ function playMoveFX(id,key,c){
       s2:()=>addAnim('explode',{x:ex,y:ey-42,maxR:95,color:'#ff5522',dur:36}) // Hairpin resonance
     },
     gojo:{
-      basic:()=>addAnim('proj',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-52,color:'#00aaff',size:18,dur:28}),
+      basic:()=>{
+        addAnim('proj',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-52,color:'#00aaff',size:18,dur:28});
+        setTimeout(()=>{ triggerFlash('#00ccff',0.8,2); addAnim('wave',{x:ex-42,y:ey-52,maxR:90,color:'#00ccff',dur:26}); },470);
+      },
       s1:()=>addAnim('wave',{x:ex,y:ey-42,maxR:150,color:'#cc66ff',dur:38}),
       s2:()=>triggerFlash('#ff0000',0.9)
     },
@@ -5140,7 +5235,11 @@ function execEnemyMove(key,move,e,p,cb){
 // ============================================================
 function onEnemyDead(){
   GS.battleActive=false;
-  if(rafId)cancelAnimationFrame(rafId);
+  eDeathFlicker=20;
+  triggerFlash('#ffffff',0.95,4); triggerShake(16); hitstop(140);
+  // keep render loop alive briefly so the death flicker + explosion are visible,
+  // then stop it before the screen transitions
+  setTimeout(()=>{ if(rafId)cancelAnimationFrame(rafId); }, 1100);
   GS.stats.killed++;
   const earned=10+Math.floor(Math.random()*21); // 10-30 coins
   GS.coins+=earned; saveProgress();
