@@ -74,8 +74,8 @@ body {
 }
 .select-header p { font-size:12px; color:#806090; letter-spacing:3px; margin-top:6px; }
 .char-grid {
-  display:grid; grid-template-columns:repeat(4,1fr);
-  gap:18px; width:100%; max-width:960px;
+  display:grid; grid-template-columns:repeat(5,1fr);
+  gap:14px; width:100%; max-width:1180px;
 }
 .char-card {
   background:linear-gradient(160deg,#140025,#0b0019);
@@ -631,6 +631,9 @@ const GS = {
 
   // training
   trainBuffApplied: false,
+
+  // story
+  storyMode: false,
 };
 
 // ============================================================
@@ -1772,6 +1775,7 @@ function selectChar(id){
 function startGame(){
   if(!GS.selectedChar)return;
   sfxMenu();
+  GS.storyMode=false;
   GS.enemyIdx=0;
   GS.stats={dmg:0,moves:0,turns:0,killed:0};
   const charDef=CHARS.find(c=>c.id===GS.selectedChar);
@@ -2097,6 +2101,24 @@ function execPlayerMove(key,move,cb){
         logMsg('☄ Hollow Purple obliterates — '+dmg+' damage!','lu');
         sfxUlt(); updateBars(); setTimeout(cb,520);
       },510);
+    } else if(move.pmulti){
+      // Sukuna Dismantle ×3 — multi-hit slash
+      let total=0, count=move.pmulti;
+      const doHit=()=>{
+        if(count<=0){
+          triggerFlash(p.color,0.4);
+          logMsg(move.name+' — '+total+' total damage!','lp');
+          updateBars(); setTimeout(cb,320); return;
+        }
+        addAnim('slash',{x:ex,y:ey-42,color:p.color,dur:18});
+        setTimeout(()=>{
+          const d=calcDmg(move.dmg,p.atk,e.def,isCrit());
+          applyEDmg(d); total+=d;
+          spawnCurseP(ex,ey-42,12); triggerShake(5);
+          updateBars(); count--; doHit();
+        },200);
+      };
+      doHit();
     } else {
       // Generic s2 (Nue, etc.)
       addAnim('slash',{x:ex,y:ey-42,color:move.type==='lightning'?'#88aaff':p.color,dur:26});
@@ -2142,19 +2164,24 @@ function execPlayerMove(key,move,cb){
       addAnim('charge',{x:388,y:ey-30,maxR:70,color:'#4488ff',dur:30});
       spawnSpiralP(388,ey-30,22,'#4488ff');
       setTimeout(()=>{
-        addAnim('domain',{kanji:'影',name:'CHIMERA SHADOW GARDEN',dur:75,color:'#4488ff'});
+        addAnim('domain',{kanji:'魔',name:'SUMMON: MAHORAGA',dur:80,color:'#4488ff'});
         triggerFlash('#2266ff',0.55);
+        // Mahoraga is summoned — it adapts (gain 2 adaptation stacks)
+        GS.mahoragaActive=true;
+        ['physical','cursed','soul','fire','slash'].forEach((tp,i)=>{ if(i<2) GS.mahoragaAdapted[tp]=(GS.mahoragaAdapted[tp]||0)+1; });
+        logMsg('Mahoraga is summoned and gains 2 adaptation stacks!','lu');
         setTimeout(()=>{
           addAnim('summon',{x:388,y:ey-22,color:'#4488ff',dur:36});
           setTimeout(()=>{
             addAnim('proj',{sx:410,sy:ey-22,tx:ex-22,ty:ey-42,color:'#4488ff',size:24,dur:20});
             setTimeout(()=>{
-              addAnim('explode',{x:ex,y:ey-42,maxR:118,color:'#4488ff',dur:45});
-              spawnCurseP(ex,ey-42,65);
-              triggerShake(15); triggerFlash('#2266ff',0.55);
+              addAnim('explode',{x:ex,y:ey-42,maxR:130,color:'#4488ff',dur:48});
+              spawnCurseP(ex,ey-42,75);
+              for(let i=0;i<8;i++) spawnP(ex+(Math.random()-0.5)*120,ey+(Math.random()-0.5)*110,5,'#88aaff',6,65);
+              triggerShake(17); triggerFlash('#2266ff',0.6);
               const dmg=calcDmg(move.dmg,p.atk,e.def,isCrit());
               applyEDmg(dmg);
-              logMsg('Divine Dog: Totality annihilates — '+dmg+' DAMAGE!','lu');
+              logMsg('Mahoraga cleaves with the World-Slashing Wheel — '+dmg+' DAMAGE!','lu');
               updateBars(); setTimeout(cb,600);
             },340);
           },450);
@@ -2201,6 +2228,31 @@ function execPlayerMove(key,move,cb){
           },700);
         },600);
       },560);
+
+    } else if(p.id==='sukuna'){
+      // Domain Expansion: Malevolent Shrine
+      addAnim('charge',{x:px+40,y:py-60,maxR:95,color:'#ff2244',dur:38});
+      spawnSpiralP(px,py-50,34,'#ff2244');
+      setTimeout(()=>{
+        addAnim('domain',{kanji:'廟',name:'MALEVOLENT SHRINE',dur:88,color:'#ff2244'});
+        triggerFlash('#ff0022',0.72);
+        setTimeout(()=>{
+          addAnim('beam',{sx:px+45,sy:py-52,tx:ex-42,ty:ey-52,color:'#ff2244',dur:24});
+          setTimeout(()=>{
+            addAnim('beam',{sx:px+45,sy:py+8,tx:ex-42,ty:ey+8,color:'#cc0011',dur:24});
+            setTimeout(()=>{
+              addAnim('explode',{x:ex,y:ey-42,maxR:170,color:'#ff0022',dur:58});
+              spawnCurseP(ex,ey-42,90);
+              for(let i=0;i<10;i++) spawnP(ex+(Math.random()-0.5)*140,ey+(Math.random()-0.5)*130,5,'#ff2244',6,72);
+              triggerShake(20); triggerFlash('#ff0022',0.82);
+              const dmg=calcDmg(move.dmg,p.atk,e.def,isCrit());
+              applyEDmg(dmg);
+              logMsg('Dismantle & Cleave cascade endlessly — '+dmg+' DAMAGE!','lu');
+              updateBars(); setTimeout(cb,860);
+            },300);
+          },300);
+        },500);
+      },400);
     }
   }
 }
@@ -2483,10 +2535,322 @@ function doRestart(){
 }
 
 // ============================================================
+//  STORY MODE
+// ============================================================
+const STORY = [
+  {
+    enemyIdx:0,
+    title:'CHAPTER 1 · FIRST CURSE',
+    lines:[
+      {speaker:'GOJO', color:'#00ddff', text:'So you can see them now — curses. Born from the negative emotions humans leak every day. Most people never notice them feeding.'},
+      {speaker:'SORCERER', color:'#c0a0ff', text:'They\'re everywhere... and that thing is grinning at me.'},
+      {speaker:'GOJO', color:'#00ddff', text:'That\'s Mahito. A special grade who plays with human souls like clay. Don\'t let him touch yours.'},
+      {speaker:'MAHITO', color:'#cc55ff', text:'A new toy! Let\'s see what your soul looks like on the inside, hehe.'}
+    ]
+  },
+  {
+    enemyIdx:1,
+    title:'CHAPTER 2 · ERUPTION',
+    lines:[
+      {speaker:'SORCERER', color:'#c0a0ff', text:'Mahito\'s gone. I can finally breathe—'},
+      {speaker:'JOGO', color:'#ff6600', text:'Breathe? You sorcerers reek of arrogance. Allow me to incinerate it.'},
+      {speaker:'GOJO', color:'#00ddff', text:'Jogo — the volcano. Watch the sky. He\'ll drop a meteor on your head and call it a greeting.'},
+      {speaker:'JOGO', color:'#ff6600', text:'MAXIMUM... behold the wrath of the earth itself!'}
+    ]
+  },
+  {
+    enemyIdx:2,
+    title:'CHAPTER 3 · KING OF CURSES',
+    lines:[
+      {speaker:'SORCERER', color:'#c0a0ff', text:'The air just turned to lead. This presence... it\'s on another level entirely.'},
+      {speaker:'SUKUNA', color:'#ff2244', text:'Stand before the King of Curses and tremble. Ryomen Sukuna does not deal in mercy.'},
+      {speaker:'GOJO', color:'#00ddff', text:'This is the one. Beat him and the curses end here. Lose, and there\'s no body left to bury.'},
+      {speaker:'SUKUNA', color:'#ff2244', text:'Enough talk. Know your place — and be dismantled.'}
+    ]
+  }
+];
+
+let storyState = {chapter:0, line:0};
+
+function startStory(){
+  sfxMenu();
+  if(!GS.selectedChar) GS.selectedChar='yuji';
+  GS.stats={dmg:0,moves:0,turns:0,killed:0};
+  GS.player=JSON.parse(JSON.stringify(CHARS.find(c=>c.id===GS.selectedChar)));
+  GS.storyMode=true;
+  storyState={chapter:0, line:0};
+  showStoryChapter();
+}
+
+function showStoryChapter(){
+  setScreen('story');
+  const ch=STORY[storyState.chapter];
+  storyState.line=0;
+  document.getElementById('story-chapter-title').textContent=ch.title;
+  drawStoryPortrait();
+  renderStoryLine();
+}
+
+function drawStoryPortrait(){
+  const cv=document.getElementById('story-canvas');
+  const ctx=cv.getContext('2d');
+  drawBg(ctx,cv.width,cv.height);
+  // player on left, current chapter enemy on right
+  drawHumanoid(ctx,150,cv.height-20,GS.player.color,GS.player.glow,GS.player.id,0,false);
+  const en=ENEMIES[STORY[storyState.chapter].enemyIdx];
+  drawHumanoid(ctx,cv.width-150,cv.height-20,en.color,en.glow,en.id,0,true);
+}
+
+function renderStoryLine(){
+  const ch=STORY[storyState.chapter];
+  const ln=ch.lines[storyState.line];
+  const sp=document.getElementById('story-speaker');
+  sp.textContent=ln.speaker;
+  sp.style.color=ln.color;
+  document.getElementById('story-text').textContent=ln.text;
+  const nb=document.getElementById('story-next-btn');
+  nb.textContent = storyState.line>=ch.lines.length-1 ? 'BATTLE ▶' : 'NEXT ▶';
+}
+
+function storyNext(){
+  sfxMenu();
+  const ch=STORY[storyState.chapter];
+  if(storyState.line < ch.lines.length-1){
+    storyState.line++;
+    renderStoryLine();
+  } else {
+    storyStartBattle();
+  }
+}
+
+function storySkip(){ sfxMenu(); storyStartBattle(); }
+
+function storyStartBattle(){
+  GS.enemyIdx = STORY[storyState.chapter].enemyIdx;
+  initBattle();
+}
+
+// Hook battle victory in story mode to advance chapters
+const _origOnEnemyDead = onEnemyDead;
+onEnemyDead = function(){
+  if(GS.storyMode){
+    GS.battleActive=false;
+    if(rafId)cancelAnimationFrame(rafId);
+    GS.stats.killed++;
+    sfxVictory();
+    addAnim('explode',{x:582,y:216,maxR:190,color:GS.enemy.color,dur:62});
+    spawnCurseP(582,216,85); triggerFlash('#fff',0.72);
+    logMsg('⭐ '+GS.enemy.name+' defeated!','ls');
+    setTimeout(()=>{
+      if(storyState.chapter < STORY.length-1){
+        storyState.chapter++;
+        const restAmt=Math.floor(GS.player.maxHp*0.4);
+        GS.player.hp=Math.min(GS.player.maxHp,GS.player.hp+restAmt);
+        GS.player.ce=Math.min(GS.player.maxCe,GS.player.ce+50);
+        showStoryChapter();
+      } else {
+        GS.storyMode=false;
+        showFinalVictory();
+      }
+    },1200);
+    return;
+  }
+  _origOnEnemyDead();
+};
+
+// ============================================================
+//  TRAINING CAMP
+// ============================================================
+let trainState=null;
+let trafId=null;
+
+const TRAIN_DRILLS=[
+  {id:'combo', label:'a) Basic Combo ×5', done:false},
+  {id:'ce',    label:'b) CE Management (3 specials)', done:false},
+  {id:'ult',   label:'c) Ultimate Test', done:false}
+];
+
+function startTraining(){
+  sfxMenu();
+  if(!GS.selectedChar) GS.selectedChar='yuji';
+  GS.player=JSON.parse(JSON.stringify(CHARS.find(c=>c.id===GS.selectedChar)));
+  trainState={
+    hits:0, totalDmg:0, biggestHit:0, movesUsed:0,
+    basicCombo:0, specialsNoEmpty:0, ceDrillActive:false,
+    drills:JSON.parse(JSON.stringify(TRAIN_DRILLS)),
+    dummyHp:999, animating:false, complete:false
+  };
+  setScreen('training');
+  document.getElementById('train-log').innerHTML='';
+  const m=GS.player.moves;
+  document.getElementById('t-s1-cost').textContent=m.s1.cost+' CE';
+  document.getElementById('t-s2-cost').textContent=m.s2.cost+' CE';
+  document.getElementById('t-ult-cost').textContent=m.ultimate.cost+' CE';
+  tLog('Training begins. Complete all 3 drills for a +5 ATK bonus!','ls');
+  updateTrain();
+  if(trafId)cancelAnimationFrame(trafId);
+  renderTraining();
+}
+
+function tLog(msg,cls=''){
+  const log=document.getElementById('train-log');
+  const d=document.createElement('div');
+  d.className='le '+cls; d.textContent=msg;
+  log.appendChild(d); log.scrollTop=log.scrollHeight;
+}
+
+function renderTraining(){
+  if(GS.screen!=='training')return;
+  const cv=document.getElementById('train-canvas');
+  const ctx=cv.getContext('2d'); const w=cv.width,h=cv.height;
+  const sx=shakeX>0.1?(Math.random()-0.5)*shakeX*2:0;
+  const sy=shakeY>0.1?(Math.random()-0.5)*shakeY*2:0;
+  shakeX*=0.82; shakeY*=0.82; if(Math.abs(shakeX)<0.1)shakeX=0;
+  ctx.save(); ctx.translate(sx,sy);
+  drawBg(ctx,w,h);
+  idleT+=0.028;
+  const idleY=Math.sin(idleT)*4;
+  // player
+  drawHumanoid(ctx,180,h-72,GS.player.color,GS.player.glow,GS.player.id,idleY,false);
+  // training dummy
+  drawDummy(ctx,580,h-72);
+  // dummy HP
+  ctx.fillStyle='#aaccbb'; ctx.font='bold 13px monospace'; ctx.textAlign='center';
+  ctx.fillText('DUMMY HP 999', 580, 40);
+  updateP(); drawP(ctx);
+  updateA(); drawA(ctx,w,h);
+  ctx.restore();
+  trafId=requestAnimationFrame(renderTraining);
+}
+
+function drawDummy(ctx,x,y){
+  ctx.save();
+  // post
+  ctx.fillStyle='#3a2410'; ctx.strokeStyle='#6a4420'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.roundRect(x-8,y-30,16,90,4); ctx.fill(); ctx.stroke();
+  // straw body
+  ctx.fillStyle='#caa850'; ctx.strokeStyle='#9a7820'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.ellipse(x,y-70,26,40,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // binding rings
+  ctx.strokeStyle='#7a5810'; ctx.lineWidth=3;
+  for(let i=-1;i<=1;i++){ ctx.beginPath(); ctx.ellipse(x,y-70+i*22,26,8,0,0,Math.PI*2); ctx.stroke(); }
+  // head
+  ctx.fillStyle='#caa850'; ctx.strokeStyle='#9a7820'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x,y-118,16,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // target X eyes
+  ctx.strokeStyle='#882200'; ctx.lineWidth=2;
+  [[-6],[6]].forEach(([ox])=>{ ctx.beginPath(); ctx.moveTo(x+ox-3,y-121); ctx.lineTo(x+ox+3,y-115); ctx.moveTo(x+ox+3,y-121); ctx.lineTo(x+ox-3,y-115); ctx.stroke(); });
+  ctx.restore();
+}
+
+function updateTrain(){
+  const t=trainState, p=GS.player;
+  document.getElementById('t-ce-ind').textContent='CE: '+Math.round(p.ce)+'/'+p.maxCe;
+  document.getElementById('train-stats-bar').innerHTML=
+    'Hits: <b>'+t.hits+'</b>   Total Dmg: <b>'+t.totalDmg+'</b>   Biggest Hit: <b>'+t.biggestHit+'</b>   Moves: <b>'+t.movesUsed+'</b>';
+  const dl=document.getElementById('drill-list');
+  dl.innerHTML='';
+  t.drills.forEach(d=>{
+    const el=document.createElement('div');
+    el.className='drill'+(d.done?' done':'');
+    el.textContent=(d.done?'✓ ':'○ ')+d.label;
+    dl.appendChild(el);
+  });
+  const ok=!t.animating&&!t.complete;
+  const m=p.moves;
+  document.getElementById('tbtn-basic').disabled=!ok;
+  document.getElementById('tbtn-s1').disabled=!ok||p.ce<m.s1.cost;
+  document.getElementById('tbtn-s2').disabled=!ok||p.ce<m.s2.cost;
+  document.getElementById('tbtn-ult').disabled=!ok||p.ce<m.ultimate.cost;
+}
+
+function markDrill(id){
+  const d=trainState.drills.find(x=>x.id===id);
+  if(d&&!d.done){ d.done=true; tLog('✓ Drill complete: '+d.label,'lc'); sfxSpecial(); }
+  if(trainState.drills.every(x=>x.done)&&!trainState.complete){
+    trainState.complete=true;
+    completeTraining();
+  }
+}
+
+function doTrainMove(key){
+  const t=trainState, p=GS.player;
+  if(!t||t.animating||t.complete)return;
+  const m=p.moves[key];
+  if(m.cost>0&&p.ce<m.cost){ tLog('Not enough Cursed Energy!','ls'); return; }
+  t.animating=true; updateTrain();
+  p.ce=Math.max(0,p.ce-m.cost);
+  t.movesUsed++;
+  sfxSpecial();
+
+  // ce drill bookkeeping
+  if(key!=='basic'&&key!=='ultimate'){
+    if(t.ceDrillActive){
+      t.specialsNoEmpty++;
+      if(t.specialsNoEmpty>=3){ markDrill('ce'); t.ceDrillActive=false; }
+    } else {
+      // start CE management drill if enough CE for 3 specials worth
+      t.ceDrillActive=true; t.specialsNoEmpty=1;
+    }
+  }
+
+  const ex=580, ey=document.getElementById('train-canvas').height-114;
+  addAnim('proj',{sx:240,sy:ey,tx:ex-30,ty:ey,color:p.color,size:13,dur:20});
+  setTimeout(()=>{
+    const dmg=calcDmg(m.dmg,p.atk,40,isCrit());
+    t.hits++; t.totalDmg+=dmg;
+    if(dmg>t.biggestHit)t.biggestHit=dmg;
+    spawnCurseP(ex,ey,22); triggerFlash(p.color,0.3); triggerShake(7);
+    addAnim('explode',{x:ex,y:ey,maxR:key==='ultimate'?150:80,color:p.color,dur:key==='ultimate'?48:30});
+    spawnFloatNum(ex,ey-30,'-'+dmg,'#ffcc00',dmg>40);
+    sfxHit();
+    tLog(p.name+' · '+m.name+' — '+dmg+' damage!','lp');
+
+    // drill checks
+    if(key==='basic'){ t.basicCombo++; if(t.basicCombo>=5) markDrill('combo'); }
+    else { t.basicCombo=0; } // basic combo must be consecutive basics
+    if(key==='ultimate'){ markDrill('ult'); }
+
+    // CE fully regens after each move (except during CE drill)
+    if(!t.ceDrillActive){ p.ce=p.maxCe; }
+
+    t.animating=false;
+    updateTrain();
+  },300);
+}
+
+function completeTraining(){
+  const t=trainState;
+  triggerFlash('#22ff66',0.6);
+  spawnFloatNum(390,140,'+5 ATK BONUS','#44ff88',true);
+  for(let i=0;i<6;i++) spawnP(390+(Math.random()-0.5)*120,160,8,'#44ff88',5,60);
+  sfxVictory();
+  tLog('★ ALL DRILLS COMPLETE! +5 ATK bonus earned for this run!','lc');
+  // permanent (for the run) ATK buff on the selected char's runtime def
+  if(!GS.trainBuffApplied){
+    const def=CHARS.find(c=>c.id===GS.selectedChar);
+    if(def){ def.atk+=5; GS.trainBuffApplied=true; }
+  }
+}
+
+function exitTraining(){
+  sfxMenu();
+  if(trafId)cancelAnimationFrame(trafId);
+  trainState=null;
+  showCharSelect();
+}
+
+// ============================================================
 //  INIT
 // ============================================================
 document.getElementById('start-btn').addEventListener('click',()=>{ sfxMenu(); showCharSelect(); });
 document.getElementById('confirm-btn').addEventListener('click',startGame);
+document.getElementById('story-btn').addEventListener('click',()=>{ GS.selectedChar=GS.selectedChar||'yuji'; startStory(); });
+document.getElementById('training-btn').addEventListener('click',()=>{ GS.selectedChar=GS.selectedChar||'yuji'; startTraining(); });
+document.getElementById('cs-story-btn').addEventListener('click',startStory);
+document.getElementById('cs-training-btn').addEventListener('click',startTraining);
+document.getElementById('story-next-btn').addEventListener('click',storyNext);
+document.getElementById('story-skip-btn').addEventListener('click',storySkip);
 
 window.addEventListener('resize',()=>{
   if(tbCanvas){ tbCanvas.width=window.innerWidth; tbCanvas.height=window.innerHeight; }
