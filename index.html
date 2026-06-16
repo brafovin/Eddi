@@ -455,7 +455,11 @@ body {
 <div id="battle-screen" class="screen">
   <div class="enemy-banner" id="enemy-banner">ENEMY: MAHITO — 真人 | IDLE TRANSFIGURATION</div>
   <div id="battle-coins">💰 0</div>
-  <canvas id="battle-canvas" width="780" height="370"></canvas>
+  <div id="battle-arena" style="position:relative;display:inline-block;max-width:100%;">
+    <canvas id="battle-canvas" width="780" height="370"></canvas>
+    <img id="char-player-img" crossorigin="anonymous" style="position:absolute;bottom:20px;left:10%;width:110px;height:auto;image-rendering:pixelated;pointer-events:none;display:none;filter:drop-shadow(0 0 10px var(--char-glow,#7b2fff));transition:transform 0.15s;" />
+    <img id="char-enemy-img"  crossorigin="anonymous" style="position:absolute;bottom:20px;right:10%;width:110px;height:auto;image-rendering:pixelated;pointer-events:none;display:none;filter:drop-shadow(0 0 10px var(--char-glow,#ff2244));transform:scaleX(-1);transition:transform 0.15s;" />
+  </div>
   <div class="bars-wrap">
     <div class="bars-side">
       <div class="bs-name" id="p-bars-name">YUJI ITADORI</div>
@@ -2437,29 +2441,55 @@ function getSkinPalette(id){
 // ============================================================
 //  REAL CHARACTER IMAGES (with pixel-art fallback)
 // ============================================================
-const CHAR_IMGS = {};
+// Character overlay images (shown as HTML img elements on top of canvas — no CORS issue)
 const CHAR_IMG_URLS = {
-  yuji:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/9/9b/Yuji_Itadori_anime_design_main.png/300px-Yuji_Itadori_anime_design_main.png',
-  megumi:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/8/87/Megumi_Fushiguro_anime_design_main.png/300px-Megumi_Fushiguro_anime_design_main.png',
-  nobara:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/a/ab/Nobara_Kugisaki_anime_design_main.png/300px-Nobara_Kugisaki_anime_design_main.png',
-  gojo:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/f/f5/Satoru_Gojo_anime_design_main.png/300px-Satoru_Gojo_anime_design_main.png',
-  sukuna:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/9/96/Ryomen_Sukuna_anime_design_main.png/300px-Ryomen_Sukuna_anime_design_main.png',
-  hakari:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/c/ca/Kinji_Hakari_anime_design_main.png/300px-Kinji_Hakari_anime_design_main.png',
-  yuta:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/b/b3/Yuta_Okkotsu_anime_design_main.png/300px-Yuta_Okkotsu_anime_design_main.png',
-  mahito:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/e/ea/Mahito_anime_design_main.png/300px-Mahito_anime_design_main.png',
-  jogo:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/8/8c/Jogo_anime_design_main.png/300px-Jogo_anime_design_main.png',
-  mahoraga:'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/3/3e/Mahoraga_anime_design_main.png/300px-Mahoraga_anime_design_main.png',
+  yuji:    'https://www.pngall.com/wp-content/uploads/13/Yuji-Itadori-PNG-Image.png',
+  megumi:  'https://www.pngall.com/wp-content/uploads/13/Megumi-Fushiguro-PNG.png',
+  nobara:  'https://www.pngall.com/wp-content/uploads/13/Nobara-Kugisaki-PNG.png',
+  gojo:    'https://www.pngall.com/wp-content/uploads/13/Satoru-Gojo-PNG.png',
+  sukuna:  'https://www.pngall.com/wp-content/uploads/13/Ryomen-Sukuna-PNG.png',
+  hakari:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/c/ca/Kinji_Hakari_anime_design_main.png',
+  yuta:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/b/b3/Yuta_Okkotsu_anime_design_main.png',
+  mahito:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/e/ea/Mahito_anime_design_main.png',
+  jogo:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/8/8c/Jogo_anime_design_main.png',
+  mahoraga:'https://static.wikia.nocookie.net/jujutsu-kaisen/images/3/3e/Mahoraga_anime_design_main.png',
 };
 
-function preloadCharImgs() {
-  Object.entries(CHAR_IMG_URLS).forEach(([id, url]) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => { CHAR_IMGS[id] = img; };
-    img.onerror = () => { CHAR_IMGS[id] = null; }; // fallback to pixel art
-    img.src = url;
-  });
+// Overlay img elements placed on top of canvas (avoids CORS canvas taint)
+let overlayPlayer = null, overlayEnemy = null;
+
+function initCharOverlays(){
+  overlayPlayer = document.getElementById('char-player-img');
+  overlayEnemy  = document.getElementById('char-enemy-img');
 }
+
+function setCharOverlay(which, id, glowColor){
+  const el = which==='player' ? overlayPlayer : overlayEnemy;
+  if(!el) return;
+  const url = CHAR_IMG_URLS[id];
+  if(url){
+    el.src = url;
+    el.style.setProperty('--char-glow', glowColor||'#7b2fff');
+    el.style.display = 'block';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function hideCharOverlays(){
+  if(overlayPlayer) overlayPlayer.style.display='none';
+  if(overlayEnemy)  overlayEnemy.style.display='none';
+}
+
+function animCharOverlay(which, lean){
+  const el = which==='player' ? overlayPlayer : overlayEnemy;
+  if(!el) return;
+  const flip = which==='enemy' ? 'scaleX(-1)' : '';
+  el.style.transform = flip + (lean ? ` rotate(${lean}deg)` : '');
+}
+
+function preloadCharImgs(){ /* legacy — overlays load on demand */ }
+const CHAR_IMGS = {}; // kept for drawCharacter fallback check
 
 // Draws a real character image if loaded, otherwise falls back to pixel art.
 function drawCharacter(ctx, id, frameIdx, cx, cy, scale=3, flip=false) {
@@ -3643,11 +3673,13 @@ let pHitF=0, eHitF=0;
 // Attack lean: positive = lean right (toward enemy)
 function playerAttack(lean=22){
   pLean=lean; pAttackFrame=1;
-  setTimeout(()=>{ pLean=0; pAttackFrame=0; },400);
+  animCharOverlay('player', lean*0.4);
+  setTimeout(()=>{ pLean=0; pAttackFrame=0; animCharOverlay('player',0); },400);
 }
 function enemyAttack(lean=-22){
   eLean=lean; eAttackFrame=1;
-  setTimeout(()=>{ eLean=0; eAttackFrame=0; },400);
+  animCharOverlay('enemy', lean*0.4);
+  setTimeout(()=>{ eLean=0; eAttackFrame=0; animCharOverlay('enemy',0); },400);
 }
 function playerHit(){pHitF=12; pHitScale=0.85; setTimeout(()=>pHitScale=1,200);}
 function enemyHit(){eHitF=12; eHitScale=0.85; setTimeout(()=>eHitScale=1,200);}
@@ -3791,6 +3823,7 @@ function setScreen(name){
   };
   const el=document.getElementById(map[name]);
   if(el)el.classList.add('active');
+  if(name!=='battle') hideCharOverlays();
 }
 
 function showTitle(){setScreen('title'); if(tbCtx) setTimeout(animTitleBg,100); else initTitleBg();}
@@ -3884,6 +3917,11 @@ function initBattle(){
 
   bCanvas=document.getElementById('battle-canvas');
   bCtx=bCanvas.getContext('2d');
+
+  // Show character overlay images
+  initCharOverlays();
+  setCharOverlay('player', GS.player.id, GS.player.glow||GS.player.color);
+  setCharOverlay('enemy',  GS.enemy.id,  GS.enemy.glow||GS.enemy.color);
 
   document.getElementById('p-bars-name').textContent=GS.player.name.toUpperCase();
   document.getElementById('e-bars-name').textContent=GS.enemy.name.toUpperCase();
@@ -4094,6 +4132,7 @@ function checkMahoraga(){
       ce: GS.player.ce, maxCe: GS.player.maxCe,
       atk: GS.player.atk, def: GS.player.def, spd: GS.player.spd };
     renderMoves();
+    setCharOverlay('player','mahoraga','#aaddff');
     addAnim('domain',{kanji:'羅', name:'MAHORAGA MANIFESTS', dur:60, color:'#334488'});
     triggerFlash('#ffffff',0.7);
     triggerShake(16);
