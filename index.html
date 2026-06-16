@@ -627,10 +627,10 @@ const CHARS = [
     atk:88, def:72, spd:85,
     sv:{hp:85,atk:88,def:72,spd:85},
     moves:{
-      basic:   {name:'⚔ Divergent Fist', cost:0,  dmg:[18,28], type:'physical'},
-      s1:      {name:'✦ Black Flash',     cost:20, dmg:[38,55], type:'cursed', stun:0.3},
-      s2:      {name:'◈ Divergent Fist+', cost:30, dmg:[28,42], type:'physical', knock:true},
-      ultimate:{name:'★ Mahoraga',        cost:50, dmg:[72,98], type:'ultimate'}
+      basic:   {name:'⚔ Divergent Fist',  cost:0,  dmg:[18,28], type:'physical'},
+      s1:      {name:'✦ Black Flash',      cost:20, dmg:[46,68], type:'physical', stun:0.3},
+      s2:      {name:'◈ Piercing Blood',   cost:30, dmg:[30,46], type:'cursed', knock:true},
+      ultimate:{name:'★ Mahoraga Summon',  cost:50, dmg:[72,98], type:'ultimate'}
     }
   },
   {
@@ -642,10 +642,10 @@ const CHARS = [
     atk:78, def:82, spd:76,
     sv:{hp:72,atk:78,def:82,spd:76},
     moves:{
-      basic:   {name:'⚔ Shadow Slash',      cost:0,  dmg:[16,24], type:'shadow'},
-      s1:      {name:'◉ Shadow Dogs',        cost:20, dmg:[26,38], type:'shadow', dot:{dmg:9,turns:3}},
-      s2:      {name:'⚡ Summoning: Nue',     cost:30, dmg:[36,50], type:'lightning', stun:0.28},
-      ultimate:{name:'★ Summon: Mahoraga',  cost:60, dmg:[68,90], type:'ultimate'}
+      basic:   {name:'⚔ Shadow Strike',          cost:0,  dmg:[16,24], type:'shadow'},
+      s1:      {name:'◉ Divine Dog: Totality',    cost:20, dmg:[28,42], type:'shadow', dot:{dmg:9,turns:3}},
+      s2:      {name:'⚡ Chimera Shadow Garden',   cost:30, dmg:[30,44], type:'shadow', shield:2},
+      ultimate:{name:'★ Mahoraga',                cost:60, dmg:[68,90], type:'ultimate'}
     }
   },
   {
@@ -657,10 +657,10 @@ const CHARS = [
     atk:84, def:66, spd:82,
     sv:{hp:70,atk:84,def:66,spd:82},
     moves:{
-      basic:   {name:'⚔ Nail Strike',      cost:0,  dmg:[17,26], type:'cursed'},
-      s1:      {name:'◆ Straw Doll',        cost:20, dmg:[22,36], type:'curse', dot:{dmg:10,turns:3}},
-      s2:      {name:'◉ Resonance',         cost:30, dmg:[32,46], type:'curse', ceSteal:15},
-      ultimate:{name:'★ Hairpin',           cost:50, dmg:[74,95], type:'ultimate', pierce:true}
+      basic:   {name:'⚔ Hairpin',                cost:0,  dmg:[17,26], type:'curse'},
+      s1:      {name:'◆ Straw Doll Technique',    cost:20, dmg:[22,36], type:'curse', dot:{dmg:10,turns:3}},
+      s2:      {name:'◉ Resonance',               cost:30, dmg:[32,46], type:'curse', burn:{dmg:13,turns:3}},
+      ultimate:{name:'★ Crimson Binding',         cost:50, dmg:[74,95], type:'ultimate', pierce:true}
     }
   },
   {
@@ -672,9 +672,9 @@ const CHARS = [
     atk:96, def:90, spd:92,
     sv:{hp:80,atk:96,def:90,spd:92},
     moves:{
-      basic:   {name:'⚔ Blue Technique',   cost:0,  dmg:[20,30], type:'infinity'},
-      s1:      {name:'◈ Infinity Shield',   cost:20, dmg:[0,0],   type:'shield', shield:2},
-      s2:      {name:'◉ Hollow Purple',     cost:30, dmg:[48,68], type:'beam'},
+      basic:   {name:'⚔ Blue',             cost:0,  dmg:[20,30], type:'cursed'},
+      s1:      {name:'◈ Red',               cost:20, dmg:[44,62], type:'cursed'},
+      s2:      {name:'◉ Hollow Purple',     cost:30, dmg:[54,76], type:'beam'},
       ultimate:{name:'★ Unlimited Void',    cost:50, dmg:[42,58], type:'ultimate', voidTurns:2}
     }
   },
@@ -689,7 +689,7 @@ const CHARS = [
     moves:{
       basic:   {name:'⚔ Dismantle',        cost:0,  dmg:[28,42], type:'slash'},
       s1:      {name:'✦ Boogie Woogie',     cost:22, dmg:[0,0],   type:'swap'},
-      s2:      {name:'◈ Dismantle ×3',      cost:35, dmg:[18,28], type:'slash', pmulti:3},
+      s2:      {name:'◈ Cleave',            cost:35, dmg:[38,54], type:'slash', scale:true},
       ultimate:{name:'★ Malevolent Shrine', cost:60, dmg:[110,150], type:'ultimate'}
     }
   },
@@ -702,9 +702,9 @@ const CHARS = [
     atk:90, def:74, spd:84,
     sv:{hp:88,atk:90,def:74,spd:84},
     moves:{
-      basic:   {name:'⚔ Jacket Rush',     cost:0,  dmg:[18,28], type:'physical'},
-      s1:      {name:'🎰 Jackpot',          cost:25, dmg:[0,0],   type:'gamble'},
-      s2:      {name:'◈ Reversal Ritual',   cost:40, dmg:[44,62], type:'cursed', heal:18},
+      basic:   {name:'⚔ Jacket Rush',          cost:0,  dmg:[18,28], type:'physical'},
+      s1:      {name:'🎰 Jackpot',               cost:25, dmg:[0,0],   type:'gamble'},
+      s2:      {name:'◈ Idle Death Gamble',     cost:40, dmg:[44,62], type:'cursed', heal:28},
       ultimate:{name:'★ Domain: Restless Gambler', cost:55, dmg:[68,94], type:'ultimate'}
     }
   },
@@ -725,6 +725,22 @@ const CHARS = [
   },
 ];
 
+// Mahoraga — Megumi transforms into this when his HP drops to <=20.
+const MAHORAGA_CHAR = {
+  id: 'mahoraga',
+  name: 'Mahoraga',
+  title: '八握剣 異戒神将 魔虚羅 · DIVINE GENERAL',
+  color: '#334488',
+  glow: '#aaddff88',
+  // HP/CE/stats are carried over from Megumi when transforming
+  moves: {
+    basic:    { name: '⚔ Eight-Handled Slash', cost: 0,  dmg: [35,50], type: 'slash' },
+    s1:       { name: '✦ Adaptation Strike',   cost: 20, dmg: [45,70], type: 'adapt' },
+    s2:       { name: '◈ Wheel of Fortune',    cost: 35, dmg: [55,80], type: 'slash', aoe: true },
+    ultimate: { name: '★ Cursed Purge',        cost: 55, dmg: [100,140], type: 'ultimate' }
+  }
+};
+
 const ENEMIES = [
   {
     id:'mahito', name:'Mahito',
@@ -734,10 +750,10 @@ const ENEMIES = [
     atk:76, def:62, spd:72,
     ai:'aggressive',
     moves:{
-      basic:   {name:'Soul Slap',            cost:0,  dmg:[16,26], type:'soul'},
-      s1:      {name:'Idle Transfiguration',  cost:25, dmg:[32,48], type:'soul', dot:{dmg:9,turns:3}},
-      s2:      {name:'Body Reshape',          cost:30, dmg:[24,36], type:'soul', heal:25},
-      ultimate:{name:'Polymorphic Soul Isomer',cost:55,dmg:[52,72], type:'ultimate', dot:{dmg:9,turns:4}}
+      basic:   {name:'Idle Transfiguration',      cost:0,  dmg:[18,28], type:'curse'},
+      s1:      {name:'Polymorphic Soul Isomer',    cost:25, dmg:[34,50], type:'curse', multi:3},
+      s2:      {name:'Body Repel',                 cost:30, dmg:[24,36], type:'curse', heal:25},
+      ultimate:{name:'Distorted Killing',          cost:55, dmg:[52,72], type:'ultimate', dot:{dmg:9,turns:4}}
     }
   },
   {
@@ -748,10 +764,10 @@ const ENEMIES = [
     atk:90, def:56, spd:64,
     ai:'powerhouse',
     moves:{
-      basic:   {name:'Ember Insects',          cost:0,  dmg:[18,30], type:'fire'},
+      basic:   {name:'Ember Insects',          cost:0,  dmg:[18,30], type:'fire', burn:{dmg:10,turns:2}},
       s1:      {name:'Disaster Flames',        cost:25, dmg:[34,52], type:'fire', burn:{dmg:12,turns:3}},
-      s2:      {name:'Volcanic Domain',        cost:32, dmg:[28,44], type:'fire'},
-      ultimate:{name:'Maximum: Meteor',        cost:60, dmg:[68,90], type:'ultimate', burn:{dmg:14,turns:3}}
+      s2:      {name:'Maximum Meteor',         cost:32, dmg:[40,58], type:'fire', burn:{dmg:12,turns:3}},
+      ultimate:{name:'Coffin of the Iron Mountain', cost:60, dmg:[68,90], type:'ultimate', burn:{dmg:14,turns:3}}
     }
   },
   {
@@ -794,6 +810,8 @@ const GS = {
   // Megumi Mahoraga passive
   mahoragaActive: false,
   mahoragaAdapted: {},
+  mahoragaSeen: {},      // move types Mahoraga has witnessed the enemy use
+  enemyLastType: null,   // last move type the enemy used
 
   // training
   trainBuffApplied: false,
@@ -1707,6 +1725,75 @@ todo:[
 '  kkkkkkkkkkkk  ',
 '  kkkkkkkkkkkk  ',
 '  kkkkkkkkkkkk  ',
+]],
+mahoraga:[
+[// frame 0 - idle
+'    wwwwwwww    ',
+'   wWwwwwwwWw   ',
+'  wW        Ww  ',
+'  wW        Ww  ',
+'   wWwwwwwwWw   ',
+'    wwwwwwww    ',
+'      kkkk      ',
+'     knnnk      ',
+'     knnnnk     ',
+'     knnnNk     ',
+'     kkkkk      ',
+' kk  kkBBk  kk  ',
+'kBBkkBBBBBBkkBBk',
+'kBBBBBBBBBBBBBBk',
+'kBBBBBBBBBBBBBBk',
+'kBBBBBBBBBBBBBBk',
+' kBBBBBBBBBBBBk ',
+' kBBBBBBBBBBBBk ',
+'kk kBBBBBBBBk kk',
+'kBk kBBBBBBk kBk',
+'kBk  kBBBBk  kBk',
+'kBk  kBBBBk  kBk',
+'kBk  kBBBBk  kBk',
+'kBk  kBBBBk  kBk',
+' kk   kBBk   kk ',
+'       kBk      ',
+'       kBk      ',
+'      kkBkk     ',
+'      kBBBk     ',
+'      kBBBk     ',
+'       kkk      ',
+'                ',
+],
+[// frame 1 - attack
+'    wwwwwwww    ',
+'   wWWwwwwWWw   ',
+'  wWW      WWw  ',
+'  wWW      WWw  ',
+'   wWWwwwwWWw   ',
+'    wwwwwwww    ',
+'      kkkk      ',
+'     knnnk      ',
+'     knnnnk     ',
+'     knnnNk     ',
+'     kkkkk      ',
+'kk   kkBBk   kk ',
+'kBBk kBBBBk kBBk',
+'kBBBBBBBBBBBBBBk',
+'kBBBBBBBBBBBBBBk',
+'kBBBBBBBBBBBBBBk',
+'kBBk kBBBBk kBBk',
+'kBk   kBBk   kBk',
+'kk    kBBk    kk',
+'      kBBk      ',
+'      kBBk      ',
+'      kBBk      ',
+'      kBBk      ',
+'      kBBk      ',
+'      kBBk      ',
+'      kBBk      ',
+'      kBBk      ',
+'     kkBBkk     ',
+'     kBBBBk     ',
+'     kBBBBk     ',
+'      kkkk      ',
+'                ',
 ]]};
 
 // Divine Dog sprite (12×9, 2 run frames)
@@ -2956,6 +3043,7 @@ function renderBattle(){
     bCtx.save();
     bCtx.translate(px,py); bCtx.scale(sc,sc); bCtx.translate(-px,-py);
     drawPixelAura(bCtx,px,py,GS.player.color,PSCALE);
+    if(GS.mahoragaActive) drawPixelAura(bCtx,px,py,'#aaddff',PSCALE,16,32,0.6);
     if(pHitF>0){
       bCtx.save(); bCtx.globalAlpha=pHitF/14;
       bCtx.filter='brightness(12) saturate(0)';
@@ -3125,8 +3213,12 @@ function initBattle(){
   GS.pStatuses=[];
   GS.eStatuses=[];
   GS.shieldTurns=0;
-  GS.mahoragaActive=false;
+  // Mahoraga transformation persists across enemies once it has taken over.
+  if(GS.player && GS.player.id==='mahoraga') GS.mahoragaActive=true;
+  else GS.mahoragaActive=false;
   GS.mahoragaAdapted={};
+  GS.mahoragaSeen={};
+  GS.enemyLastType=null;
   GS.playerTurn=true;
   GS.battleActive=true;
   GS.animating=false;
@@ -3145,14 +3237,7 @@ function initBattle(){
     'ENEMY: '+GS.enemy.name.toUpperCase()+' — '+GS.enemy.title;
 
   // button labels
-  const m=GS.player.moves;
-  document.getElementById('btn-basic').childNodes[0].textContent=m.basic.name;
-  document.getElementById('btn-s1').childNodes[0].textContent=m.s1.name;
-  document.getElementById('btn-s2').childNodes[0].textContent=m.s2.name;
-  document.getElementById('btn-ult').childNodes[0].textContent=m.ultimate.name;
-  document.getElementById('s1-cost').textContent=m.s1.cost+' CE';
-  document.getElementById('s2-cost').textContent=m.s2.cost+' CE';
-  document.getElementById('ult-cost').textContent=m.ultimate.cost+' CE';
+  renderMoves();
 
   updateBars();
   logMsg('⚔ Battle begins! '+GS.player.name+' vs '+GS.enemy.name+'!','ls');
@@ -3261,18 +3346,39 @@ function calcDmg(dmgArr, atkStat, defStat, crit=false){
   return Math.max(1,d);
 }
 
+function renderMoves(){
+  if(!GS.player)return;
+  const m=GS.player.moves;
+  document.getElementById('btn-basic').childNodes[0].textContent=m.basic.name;
+  document.getElementById('btn-s1').childNodes[0].textContent=m.s1.name;
+  document.getElementById('btn-s2').childNodes[0].textContent=m.s2.name;
+  document.getElementById('btn-ult').childNodes[0].textContent=m.ultimate.name;
+  document.getElementById('s1-cost').textContent=m.s1.cost+' CE';
+  document.getElementById('s2-cost').textContent=m.s2.cost+' CE';
+  document.getElementById('ult-cost').textContent=m.ultimate.cost+' CE';
+}
+
 function checkMahoraga(){
   // Activates when Megumi drops to 20 HP or below
   if(GS.player && GS.player.id==='megumi' && !GS.mahoragaActive && GS.player.hp>0
      && GS.player.hp <= 20){
     GS.mahoragaActive=true;
-    logMsg('八握剣 — MAHORAGA manifests! It will adapt to all it sees.','lu');
-    triggerFlash('#ffaa22',0.5);
-    spawnP(195,216,40,'#ffaa22',4,55);
+    // Megumi steps back — Mahoraga takes over the fight, keeping his HP/CE/stats.
+    GS.player = { ...GS.player, ...MAHORAGA_CHAR,
+      hp: GS.player.hp, maxHp: GS.player.maxHp,
+      ce: GS.player.ce, maxCe: GS.player.maxCe,
+      atk: GS.player.atk, def: GS.player.def, spd: GS.player.spd };
+    renderMoves();
+    addAnim('domain',{kanji:'羅', name:'MAHORAGA MANIFESTS', dur:60, color:'#334488'});
+    triggerFlash('#ffffff',0.7);
+    triggerShake(16);
+    spawnP(195,216,40,'#aaddff',5,60); spawnSpiralP(195,216,28,'#334488');
+    logMsg('八握剣 — Megumi steps back. MAHORAGA takes the field!','lu');
   }
 }
 
 function applyPDmg(dmg, moveType){
+  if(moveType){ GS.enemyLastType=moveType; GS.mahoragaSeen[moveType]=(GS.mahoragaSeen[moveType]||0)+1; }
   // Mahoraga adaptation: reduce damage from already-seen move types
   if(GS.mahoragaActive && moveType){
     const stacks = GS.mahoragaAdapted[moveType]||0;
@@ -3453,7 +3559,24 @@ function execPlayerMove(key,move,cb){
 
   } else if(key==='s1'){
     playMoveFX(p.id,'s1',{px,py,ex,ey});
-    if(move.type==='gamble'){
+    if(move.type==='adapt'){
+      // Mahoraga Adaptation Strike — wheel turns, +30% if the enemy has shown this move type before
+      addAnim('slash',{x:ex,y:ey-42,w:180,h:80,color:'#aaddff',dur:40});
+      addAnim('charge',{x:px+40,y:py-50,maxR:60,color:'#aaddff',dur:24});
+      setTimeout(()=>{
+        let dmg=calcDmg(move.dmg,p.atk,e.def,crit);
+        const lastType=GS.enemyLastType;
+        const adapted = lastType && (GS.mahoragaSeen&&GS.mahoragaSeen[lastType]);
+        if(adapted){dmg=Math.round(dmg*1.3);}
+        applyEDmg(dmg);
+        spawnCurseP(ex,ey-42,30); spawnP(ex,ey-42,12,'#aaddff',5,45);
+        triggerFlash('#aaddff',0.4); triggerShake(9);
+        addAnim('wave',{x:ex,y:ey-42,maxR:110,color:'#334488',dur:32});
+        if(adapted)logMsg('Mahoraga has ADAPTED to '+lastType+'! Adaptation Strike — '+dmg+' damage!','lu');
+        else logMsg(move.name+' — '+dmg+' damage!','lp');
+        sfxHit(); updateBars(); setTimeout(cb,340);
+      },330);
+    } else if(move.type==='gamble'){
       // Hakari Jackpot — 50% deal 80 dmg + bonus turn, 50% heal 30
       addAnim('charge',{x:px+40,y:py-50,maxR:60,color:'#ffcc00',dur:24});
       spawnSpiralP(px,py-50,22,'#ffcc00');
@@ -3572,16 +3695,23 @@ function execPlayerMove(key,move,cb){
       };
       doHit();
     } else {
-      // Generic s2 (Nue, etc.)
+      // Generic s2 (Chimera Shadow Garden, Cleave, Resonance, etc.)
+      // Megumi Chimera Shadow Garden — raise a shadow shield before striking
+      if(move.shield){GS.shieldTurns=Math.max(GS.shieldTurns,move.shield);addAnim('shield',{x:px,y:py,dur:55});spawnCurseP(px,py-42,18);}
       addAnim('slash',{x:ex,y:ey-42,color:move.type==='lightning'?'#88aaff':p.color,dur:26});
       setTimeout(()=>{
-        const dmg=calcDmg(move.dmg,p.atk,e.def,crit);
+        let dmg=calcDmg(move.dmg,p.atk,e.def,crit);
+        // Sukuna Cleave — adapts power to target's remaining HP%
+        if(move.scale){const pct=Math.max(0,Math.min(1,e.hp/e.maxHp));dmg=Math.round(dmg*(1+pct*0.6));}
         applyEDmg(dmg);
         spawnCurseP(ex,ey-42,22);
         triggerFlash(p.color,0.36);triggerShake(7);
         if(crit)logMsg('★ CRITICAL! '+move.name+' — '+dmg+' damage!','lc');
         else logMsg(move.name+' — '+dmg+' damage!','lp');
+        if(move.shield)logMsg(p.name+' raises a shadow shield ('+move.shield+' turns)!','lp');
         if(move.stun&&Math.random()<move.stun){addStatus(GS.eStatuses,'stun',{turns:1});logMsg('Enemy stunned!','ls');}
+        if(move.dot){addStatus(GS.eStatuses,'dot',{turns:move.dot.turns,dmg:move.dot.dmg});}
+        if(move.burn){addStatus(GS.eStatuses,'burn',{turns:move.burn.turns,dmg:move.burn.dmg});spawnFireP(ex,ey-42,16);logMsg('Resonance ignites '+e.name+'!','ls');}
         if(move.heal){const h=Math.min(move.heal,p.maxHp-p.hp);p.hp+=h;if(h>0){logMsg(p.name+' recovers '+h+' HP!','lh');spawnP(px,py-42,12,'#44ff88',5,40);}}
         sfxHit(); updateBars(); setTimeout(cb,320);
       },330);
@@ -3762,6 +3892,39 @@ function execPlayerMove(key,move,cb){
         },500);
       },400);
 
+    } else if(p.id==='mahoraga'){
+      // Cursed Purge — Mahoraga's wheel adapts and erases the enemy
+      addAnim('charge',{x:px+40,y:py-60,maxR:95,color:'#334488',dur:38});
+      spawnSpiralP(px,py-50,34,'#aaddff');
+      setTimeout(()=>{
+        addAnim('domain',{kanji:'羅',name:'CURSED PURGE',dur:84,color:'#334488'});
+        triggerFlash('#ffffff',0.7);
+        setTimeout(()=>{
+          addAnim('slash',{x:ex,y:ey-42,w:200,h:90,color:'#aaddff',dur:44});
+          addAnim('beam',{sx:px+45,sy:py-52,tx:ex-42,ty:ey-52,color:'#aaddff',dur:30});
+          setTimeout(()=>{
+            addAnim('explode',{x:ex,y:ey-42,maxR:165,color:'#334488',dur:56});
+            spawnCurseP(ex,ey-42,88);
+            for(let i=0;i<10;i++) spawnP(ex+(Math.random()-0.5)*140,ey+(Math.random()-0.5)*130,5,'#aaddff',6,70);
+            triggerShake(20); triggerFlash('#aaddff',0.8);
+            const dmg=calcDmg(move.dmg,p.atk,e.def,isCrit());
+            applyEDmg(dmg);
+            logMsg('Mahoraga purges all curses — '+dmg+' DAMAGE!','lu');
+            updateBars(); setTimeout(cb,860);
+          },440);
+        },500);
+      },400);
+
+    } else {
+      // Fallback ultimate (any character without a bespoke handler)
+      addAnim('explode',{x:ex,y:ey-42,maxR:150,color:p.color,dur:50});
+      setTimeout(()=>{
+        spawnCurseP(ex,ey-42,70); triggerShake(16); triggerFlash(p.color,0.7);
+        const dmg=calcDmg(move.dmg,p.atk,e.def,isCrit());
+        applyEDmg(dmg);
+        logMsg(move.name+' — '+dmg+' DAMAGE!','lu');
+        updateBars(); setTimeout(cb,700);
+      },400);
     }
   }
 }
