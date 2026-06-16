@@ -159,6 +159,51 @@ body {
 .sbadge-void  { background:#001a11; border-color:#00ff88; color:#00ff88; }
 .sbadge-dot   { background:#001a33; border-color:#4488ff; color:#4488ff; }
 .sbadge-regen { background:#001a00; border-color:#44ff88; color:#44ff88; }
+.sbadge-maho  { background:#1a1000; border-color:#ffaa22; color:#ffdd66; font-weight:bold; box-shadow:0 0 8px #ffaa2266; }
+
+/* secondary title buttons */
+.sub-btn {
+  padding:12px 40px; font-size:15px; margin-top:14px;
+  background:linear-gradient(135deg,#26004d,#4a0099);
+  color:#d8c0ff; border:2px solid #6a30b0; border-radius:5px;
+  cursor:pointer; letter-spacing:3px; text-transform:uppercase;
+  box-shadow:0 0 18px #4a009955; transition:all 0.3s;
+}
+.sub-btn:hover { box-shadow:0 0 38px #7b2fff99; transform:scale(1.05); background:linear-gradient(135deg,#3a0070,#6a00dd); }
+
+/* ==============================
+   STORY MODE
+============================== */
+#story-screen { justify-content:flex-start; align-items:center; min-height:100vh; padding:20px; position:relative; }
+#story-canvas { border:2px solid #220045; border-radius:8px; box-shadow:0 0 35px #3a007088; max-width:100%; background:#05010f; }
+.story-box {
+  width:100%; max-width:600px; margin-top:18px;
+  background:#0d0020; border:2px solid #4a0099; border-radius:9px;
+  padding:18px 22px; box-shadow:0 0 28px #4a009966;
+}
+.story-speaker { font-size:15px; font-weight:bold; letter-spacing:2px; margin-bottom:8px; }
+.story-text { font-size:14px; color:#d0c0ee; line-height:1.6; min-height:60px; }
+.story-btns { display:flex; gap:12px; margin-top:16px; justify-content:flex-end; }
+.story-chapter-title { font-size:22px; color:#c0a0ff; letter-spacing:4px; margin-bottom:10px; text-shadow:0 0 20px #7b2fff; text-align:center; }
+
+/* ==============================
+   TRAINING
+============================== */
+#training-screen { padding:14px 12px; min-height:100vh; }
+.train-header { text-align:center; margin-bottom:8px; }
+.train-header h2 { font-size:24px; color:#66ffaa; letter-spacing:4px; text-shadow:0 0 18px #22cc77; }
+.train-stats-bar {
+  display:flex; gap:18px; flex-wrap:wrap; justify-content:center;
+  background:#0d0020; border:1px solid #220044; border-radius:7px;
+  padding:8px 14px; margin:8px 0; font-size:12px; color:#aaccbb;
+}
+.train-stats-bar b { color:#66ffaa; }
+.drill-list { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:6px 0; }
+.drill {
+  font-size:11px; padding:6px 12px; border-radius:6px;
+  border:1px solid #335544; background:#0a1810; color:#88ccaa; letter-spacing:1px;
+}
+.drill.done { border-color:#44ff88; background:#0a2a18; color:#66ffaa; box-shadow:0 0 12px #22cc7755; }
 
 .battle-bottom {
   display:grid; grid-template-columns:1fr 290px;
@@ -262,6 +307,10 @@ body {
   <div class="title-tagline">CURSED BATTLE · 術式展開</div>
   <div class="title-divider"></div>
   <button class="big-btn" id="start-btn">BEGIN BATTLE ▶</button>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
+    <button class="sub-btn" id="story-btn">STORY MODE 物語</button>
+    <button class="sub-btn" id="training-btn">TRAINING CAMP 修行</button>
+  </div>
   <div style="margin-top:24px;font-size:10px;color:#3a1a60;letter-spacing:3px;">「悪霊を祓え」EXORCISE THE CURSES</div>
 </div>
 
@@ -274,6 +323,10 @@ body {
   <div class="char-grid" id="char-grid"></div>
   <div class="confirm-btn-wrap">
     <button class="confirm-btn" id="confirm-btn">ENTER BATTLE →</button>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+    <button class="sub-btn" id="cs-training-btn">TRAINING CAMP 修行</button>
+    <button class="sub-btn" id="cs-story-btn">STORY MODE 物語</button>
   </div>
 </div>
 
@@ -352,6 +405,45 @@ body {
   </div>
 </div>
 
+<!-- STORY -->
+<div id="story-screen" class="screen">
+  <div class="story-chapter-title" id="story-chapter-title">CHAPTER 1</div>
+  <canvas id="story-canvas" width="520" height="300"></canvas>
+  <div class="story-box">
+    <div class="story-speaker" id="story-speaker">GOJO</div>
+    <div class="story-text" id="story-text">...</div>
+    <div class="story-btns">
+      <button class="sub-btn" id="story-skip-btn">SKIP</button>
+      <button class="sub-btn" id="story-next-btn">NEXT ▶</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRAINING -->
+<div id="training-screen" class="screen">
+  <div class="train-header"><h2>修行 · TRAINING CAMP</h2></div>
+  <div class="drill-list" id="drill-list"></div>
+  <canvas id="train-canvas" width="780" height="340"></canvas>
+  <div class="train-stats-bar" id="train-stats-bar"></div>
+  <div class="battle-bottom" style="max-width:780px;">
+    <div class="moves-panel">
+      <div class="moves-panel-title">術式 · TRAINING</div>
+      <div class="moves-grid">
+        <button class="mbtn mbtn-basic" id="tbtn-basic" onclick="doTrainMove('basic')">⚔ Basic<span class="mcost">FREE</span></button>
+        <button class="mbtn mbtn-s1" id="tbtn-s1" onclick="doTrainMove('s1')">Special 1<span class="mcost" id="t-s1-cost">20 CE</span></button>
+        <button class="mbtn mbtn-s2" id="tbtn-s2" onclick="doTrainMove('s2')">Special 2<span class="mcost" id="t-s2-cost">30 CE</span></button>
+        <button class="mbtn mbtn-ult" id="tbtn-ult" onclick="doTrainMove('ultimate')">★ ULTIMATE<span class="mcost" id="t-ult-cost">50 CE</span></button>
+      </div>
+      <div class="turn-ind"><span id="t-ce-ind">CE: 100/100</span></div>
+      <button class="sub-btn" style="width:100%;margin-top:10px;" onclick="exitTraining()">◀ BACK TO SELECT</button>
+    </div>
+    <div class="log-panel">
+      <div class="log-panel-title">訓練記録 · LOG</div>
+      <div class="log-scroll" id="train-log"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 "use strict";
 // ============================================================
@@ -416,8 +508,8 @@ const CHARS = [
     moves:{
       basic:   {name:'⚔ Shadow Slash',      cost:0,  dmg:[16,24], type:'shadow'},
       s1:      {name:'◉ Shadow Dogs',        cost:20, dmg:[26,38], type:'shadow', dot:{dmg:9,turns:3}},
-      s2:      {name:'⚡ Nue Strike',        cost:30, dmg:[36,50], type:'lightning', stun:0.28},
-      ultimate:{name:'★ Divine Dog: Totality',cost:50,dmg:[68,90], type:'ultimate'}
+      s2:      {name:'⚡ Summoning: Nue',     cost:30, dmg:[36,50], type:'lightning', stun:0.28},
+      ultimate:{name:'★ Summon: Mahoraga',  cost:60, dmg:[68,90], type:'ultimate'}
     }
   },
   {
@@ -448,6 +540,21 @@ const CHARS = [
       s1:      {name:'◈ Infinity Shield',   cost:20, dmg:[0,0],   type:'shield', shield:2},
       s2:      {name:'◉ Hollow Purple',     cost:30, dmg:[48,68], type:'beam'},
       ultimate:{name:'★ Unlimited Void',    cost:50, dmg:[42,58], type:'ultimate', voidTurns:2}
+    }
+  },
+  {
+    id:'sukuna', name:'Ryomen Sukuna',
+    title:'両面宿儺 · KING OF CURSES',
+    lore:'The King of Curses, vessel-bound undisputed strongest. Tears foes apart with Dismantle and Cleave — pure slashing cursed technique — and opens the guaranteed-hit domain Malevolent Shrine.',
+    color:'#ff2244', glow:'#cc002288',
+    hp:160, maxHp:160, ce:140, maxCe:140,
+    atk:102, def:76, spd:90,
+    sv:{hp:92,atk:100,def:76,spd:90},
+    moves:{
+      basic:   {name:'⚔ Dismantle',     cost:0,  dmg:[28,42], type:'slash'},
+      s1:      {name:'✦ Cleave',         cost:20, dmg:[45,65], type:'slash', stun:0.2},
+      s2:      {name:'◈ Dismantle ×3',   cost:35, dmg:[18,28], type:'slash', pmulti:3},
+      ultimate:{name:'★ Malevolent Shrine',cost:60,dmg:[110,150], type:'ultimate'}
     }
   }
 ];
@@ -517,6 +624,13 @@ const GS = {
 
   // named flags
   shieldTurns: 0,
+
+  // Megumi Mahoraga passive
+  mahoragaActive: false,
+  mahoragaAdapted: {},
+
+  // training
+  trainBuffApplied: false,
 };
 
 // ============================================================
@@ -1596,7 +1710,8 @@ function setScreen(name){
   GS.screen=name;
   const map={
     title:'title-screen', select:'select-screen',
-    battle:'battle-screen', between:'between-screen', result:'result-screen'
+    battle:'battle-screen', between:'between-screen', result:'result-screen',
+    story:'story-screen', training:'training-screen'
   };
   const el=document.getElementById(map[name]);
   if(el)el.classList.add('active');
@@ -1670,6 +1785,8 @@ function initBattle(){
   GS.pStatuses=[];
   GS.eStatuses=[];
   GS.shieldTurns=0;
+  GS.mahoragaActive=false;
+  GS.mahoragaAdapted={};
   GS.playerTurn=true;
   GS.battleActive=true;
   GS.animating=false;
@@ -1733,6 +1850,7 @@ function updateBars(){
   const eb=document.getElementById('e-hp-bar');
   eb.className='hp-bar'+(ehpct<25?' low':ehpct<50?' mid':'');
 
+  checkMahoraga();
   updateStatuses();
   updateButtons();
 }
@@ -1752,6 +1870,10 @@ function updateStatuses(){
     if(s.type==='dot')  pr.appendChild(badge('DOT '+s.turns,'sbadge-dot'));
   });
   if(GS.shieldTurns>0) pr.appendChild(badge('SHIELD '+GS.shieldTurns,'sbadge-shield'));
+  if(GS.mahoragaActive){
+    const n=Object.keys(GS.mahoragaAdapted).length;
+    pr.appendChild(badge('MAHORAGA'+(n?' ×'+n:''),'sbadge-maho'));
+  }
 
   GS.eStatuses.forEach(s=>{
     if(s.type==='stun') er.appendChild(badge('STUN '+s.turns,'sbadge-stun'));
@@ -1798,7 +1920,31 @@ function calcDmg(dmgArr, atkStat, defStat, crit=false){
   return Math.max(1,d);
 }
 
-function applyPDmg(dmg){
+function checkMahoraga(){
+  // Activates when Megumi drops below 35% HP
+  if(GS.player && GS.player.id==='megumi' && !GS.mahoragaActive && GS.player.hp>0
+     && GS.player.hp < GS.player.maxHp*0.35){
+    GS.mahoragaActive=true;
+    logMsg('八握剣 — MAHORAGA manifests! It will adapt to all it sees.','lu');
+    triggerFlash('#ffaa22',0.5);
+    spawnP(195,216,40,'#ffaa22',4,55);
+  }
+}
+
+function applyPDmg(dmg, moveType){
+  // Mahoraga adaptation: reduce damage from already-seen move types
+  if(GS.mahoragaActive && moveType){
+    const stacks = GS.mahoragaAdapted[moveType]||0;
+    if(stacks>0){
+      const reduction = Math.min(0.6, stacks*0.3);
+      const before=dmg;
+      dmg=Math.max(1,Math.round(dmg*(1-reduction)));
+      logMsg('Mahoraga has adapted to '+moveType+'! Damage '+before+'→'+dmg+'.','lh');
+    }
+    // Mahoraga takes the hit -> adapt to this type
+    GS.mahoragaAdapted[moveType]=(GS.mahoragaAdapted[moveType]||0)+1;
+    logMsg('Mahoraga adapts to '+moveType+'!','lh');
+  }
   if(GS.shieldTurns>0){
     const ref=Math.floor(dmg*0.3);
     dmg=Math.floor(dmg*0.5);
@@ -2148,7 +2294,7 @@ function execEnemyMove(key,move,e,p,cb){
     addAnim('proj',{sx:ex-32,sy:ey-32,tx:px+32,ty:py-32,color:e.color,size:11,dur:25});
     setTimeout(()=>{
       const dmg=calcDmg(move.dmg,e.atk,p.def,crit);
-      applyPDmg(dmg);
+      applyPDmg(dmg,move.type);
       spawnCurseP(px,py-42,16);
       if(crit)logMsg('★ CRITICAL! '+move.name+' hits you for '+dmg+'!','lc');
       else logMsg(e.name+' hits for '+dmg+'!','le2');
@@ -2164,7 +2310,7 @@ function execEnemyMove(key,move,e,p,cb){
       addAnim('slash',{x:px,y:py-42,color:e.color,dur:26});
       setTimeout(()=>{
         const dmg=calcDmg(move.dmg,e.atk,p.def,crit);
-        applyPDmg(dmg);
+        applyPDmg(dmg,move.type);
         if(move.dot){addStatus(GS.pStatuses,'curse',{turns:move.dot.turns,dmg:move.dot.dmg});}
         if(move.burn){addStatus(GS.pStatuses,'burn',{turns:move.burn.turns,dmg:move.burn.dmg});spawnFireP(px,py-42,20);}
         spawnCurseP(px,py-42,22);triggerShake(8);
@@ -2189,7 +2335,7 @@ function execEnemyMove(key,move,e,p,cb){
         addAnim('proj',{sx:ex-32,sy:ey-32,tx:px+32,ty:py-32,color:'#ff2244',size:9,dur:16});
         setTimeout(()=>{
           const d=calcDmg(move.dmg,e.atk,p.def);
-          applyPDmg(d);total+=d;
+          applyPDmg(d,move.type);total+=d;
           spawnCurseP(px,py-42,9);triggerShake(4);
           updateBars();count--;doHit();
         },200);
@@ -2199,7 +2345,7 @@ function execEnemyMove(key,move,e,p,cb){
       addAnim('beam',{sx:ex-42,sy:ey-52,tx:px+42,ty:py-52,color:e.color,dur:30});
       setTimeout(()=>{
         const dmg=calcDmg(move.dmg,e.atk,p.def,crit);
-        applyPDmg(dmg);
+        applyPDmg(dmg,move.type);
         spawnCurseP(px,py-52,32);triggerFlash(e.color,0.42);triggerShake(10);
         if(crit)logMsg('★ CRITICAL! '+move.name+' — '+dmg+'!','lc');
         else logMsg(e.name+': '+move.name+' — '+dmg+' damage!','le2');
@@ -2216,7 +2362,7 @@ function execEnemyMove(key,move,e,p,cb){
       addAnim('void',{x:px,y:py-42,dur:58});
       setTimeout(()=>{
         const dmg=calcDmg(move.dmg,e.atk,p.def,isCrit());
-        applyPDmg(dmg);
+        applyPDmg(dmg,move.type);
         if(move.dot){addStatus(GS.pStatuses,'curse',{turns:move.dot.turns,dmg:move.dot.dmg});}
         spawnCurseP(px,py-42,55);triggerShake(15);triggerFlash('#cc44ff',0.62);
         logMsg('Soul transfigured! '+dmg+' damage + extended curse!','lu');
@@ -2228,7 +2374,7 @@ function execEnemyMove(key,move,e,p,cb){
       setTimeout(()=>{
         addAnim('explode',{x:px,y:py-42,maxR:168,color:'#ff4400',dur:52});
         const dmg=calcDmg(move.dmg,e.atk,p.def,isCrit());
-        applyPDmg(dmg);
+        applyPDmg(dmg,move.type);
         if(move.burn){addStatus(GS.pStatuses,'burn',{turns:move.burn.turns,dmg:move.burn.dmg});}
         spawnFireP(px,py-42,65);
         for(let i=0;i<5;i++)spawnFireP(px+(Math.random()-0.5)*90,py+(Math.random()-0.5)*90,6);
@@ -2244,7 +2390,7 @@ function execEnemyMove(key,move,e,p,cb){
         setTimeout(()=>{
           addAnim('explode',{x:px,y:py-42,maxR:210,color:'#ff0022',dur:62});
           const dmg=calcDmg(move.dmg,e.atk,p.def,isCrit());
-          applyPDmg(dmg);
+          applyPDmg(dmg,move.type);
           spawnCurseP(px,py-42,88);spawnCurseP(388,205,45);
           triggerShake(20);triggerFlash('#ff0022',0.85);
           logMsg('Malevolent Shrine expands — Dismantle & Cleave cascade! '+dmg+' DAMAGE!!!','lu');
