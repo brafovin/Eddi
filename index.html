@@ -817,6 +817,21 @@ const CHARS = [
       ultimate:{name:'★ Coffin of the Iron Mountain', cost:60, dmg:[90,120], type:'ultimate', burn:{dmg:15,turns:3}}
     }
   },
+  {
+    id:'mahoraga', name:'Mahoraga',
+    title:'八握剣 異戒神将 魔虚羅 · DIVINE GENERAL',
+    lore:'The mightiest of the Ten Shadows — a divine general that adapts to any technique it faces. Each strike of its eight-handled sword severs fate itself. It cannot be defeated twice the same way.',
+    color:'#334488', glow:'#aaddff88',
+    hp:220, maxHp:220, ce:80, maxCe:80,
+    atk:115, def:95, spd:55,
+    sv:{hp:220,atk:115,def:95,spd:55},
+    moves:{
+      basic:   {name:'⚔ Eight-Handled Slash',  cost:0,  dmg:[40,58], type:'slash'},
+      s1:      {name:'✦ Adaptation Strike',    cost:18, dmg:[50,75], type:'adapt'},
+      s2:      {name:'◈ Wheel of Fortune',     cost:32, dmg:[60,88], type:'slash', aoe:true},
+      ultimate:{name:'★ Cursed Purge',         cost:55, dmg:[110,155], type:'ultimate'}
+    }
+  },
 ];
 
 // Mahoraga — Megumi transforms into this when his HP drops to <=20.
@@ -4585,7 +4600,7 @@ function checkMahoraga(){
 function applyPDmg(dmg, moveType){
   if(moveType){ GS.enemyLastType=moveType; GS.mahoragaSeen[moveType]=(GS.mahoragaSeen[moveType]||0)+1; }
   // Mahoraga adaptation: reduce damage from already-seen move types
-  if(GS.mahoragaActive && moveType){
+  if((GS.mahoragaActive || GS.player?.id==='mahoraga') && moveType){
     const stacks = GS.mahoragaAdapted[moveType]||0;
     if(stacks>0){
       const reduction = Math.min(0.6, stacks*0.3);
