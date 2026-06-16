@@ -947,6 +947,14 @@ const GS = {
   equippedSkins: {},         // charId -> skinId
   upgrades: {hp_boost:0, atk_boost:0, ce_boost:0, regen:0},
   bonusTurn: false,
+
+  // Jujutsu Shenanigans
+  shenanigansEnabled: true,
+  cullingCEHalf: 0,
+  cullingShield: 0,
+  cullingDouble: 0,
+  cullingRegen: 0,
+  gojoVibing: 0,
 };
 
 // ============================================================
@@ -4329,6 +4337,11 @@ function initBattle(){
   GS.enemyLastMove=null;
   GS.jackpotMode=0;
   if(GS.jackpotSavedMoves&&GS.player?.id==='hakari'){ GS.player.moves=GS.jackpotSavedMoves; GS.jackpotSavedMoves=null; }
+  GS.cullingCEHalf=0;
+  GS.cullingShield=0;
+  GS.cullingDouble=0;
+  GS.cullingRegen=0;
+  GS.gojoVibing=0;
   GS.playerTurn=true;
   GS.battleActive=true;
   GS.animating=false;
@@ -4501,6 +4514,7 @@ function calcDmg(dmgArr, atkStat, defStat, crit=false){
   d=Math.round(d*(atkStat/82));
   d=Math.round(d*(100/(100+defStat*0.28)));
   if(crit)d=Math.round(d*1.55);
+  if(GS.cullingDouble>0)d=d*2;
   return Math.max(1,d);
 }
 
@@ -4639,6 +4653,7 @@ function applyPDmg(dmg, moveType){
   }
   GS.player.hp-=dmg;
   if(dmg>0)GS.stats.tookDamage=true;
+  if(GS.cullingShield>0&&GS.player.hp<1){GS.player.hp=1;logMsg('Culling Game Immortality rule keeps you at 1 HP!','lh');}
   if(GS.player.hp<0)GS.player.hp=0;
   playerHit(); flashCharOverlay('player');
   triggerShake(dmg>40?12:8);
@@ -4667,21 +4682,211 @@ function addStatus(arr,type,data){
 }
 
 // ============================================================
+//  JUJUTSU SHENANIGANS — random cursed events
+// ============================================================
+function maybeTriggerShenanigan(){
+  if(!GS.shenanigansEnabled || !GS.battleActive || Math.random() > 0.15) return;
+  // Don't trigger if already animating
+  if(GS.animating) return;
+  const events = [
+    shenanigan_gegeKills,
+    shenanigan_todoAppears,
+    shenanigan_sukunaTakeover,
+    shenanigan_nanami,
+    shenanigan_cullingGame,
+    shenanigan_yujiDies,
+    shenanigan_gojoMusic,
+    shenanigan_reversedCursed,
+    shenanigan_meiMei,
+    shenanigan_kenjakuScheme,
+  ];
+  const fn = events[Math.floor(Math.random()*events.length)];
+  fn();
+}
+
+// 1. Gege's Pen strikes
+function shenanigan_gegeKills(){
+  const dice = Math.random();
+  if(dice < 0.3 && GS.player.hp > 30){
+    GS.player.hp = 1;
+    triggerFlash('#ff0000', 0.9, 6);
+    triggerShake(25);
+    spawnP(195,216,30,'#ff0000',5,50);
+    logMsg('✒ GEGE\'S PEN strikes! The author decides your fate — 1 HP!','lc');
+    addAnim('domain',{kanji:'芥', name:'GEGE AKUTAMI', dur:50, color:'#ff0000'});
+    makeSound('domain');
+  } else {
+    logMsg('✒ Gege\'s pen hovers over you... and moves on. You live.','ls');
+  }
+  updateBars();
+}
+
+// 2. Aoi Todo appears!
+function shenanigan_todoAppears(){
+  GS.animating=true;
+  addAnim('wave',{x:390,y:216,maxR:200,color:'#ff8800',dur:40});
+  triggerFlash('#ffaa44',0.7,4);
+  logMsg('👐 AOI TODO appears! BOOGIE WOOGIE! Positions swapped — HP exchanged!','lu');
+  makeSound('jackpot');
+  setTimeout(()=>{
+    const tempHp = GS.player.hp;
+    GS.player.hp = Math.max(1, GS.enemy.hp);
+    GS.enemy.hp = Math.max(1, tempHp);
+    triggerShake(15);
+    spawnSpiralP(390,216,30,'#ff8800');
+    updateBars();
+    GS.animating=false;
+  }, 600);
+}
+
+// 3. Sukuna takes over
+function shenanigan_sukunaTakeover(){
+  GS.animating=true;
+  logMsg('👁 SUKUNA: "You\'re pathetic. Let me handle this." — FREE ATTACK!','lc');
+  triggerFlash('#ff0022',0.85,5);
+  addAnim('domain',{kanji:'宿', name:'SUKUNA TAKES OVER', dur:55, color:'#ff0022'});
+  makeSound('domain');
+  setTimeout(()=>{
+    addAnim('slash',{x:582,y:216,color:'#ff0022',dur:22,big:true});
+    for(let i=0;i<3;i++) setTimeout(()=>{
+      addAnim('strike',{sx:195,sy:216,tx:582,ty:216,color:'#ff0022',size:14,dur:16});
+    },i*120);
+    setTimeout(()=>{
+      const dmg = 120;
+      applyEDmg(dmg);
+      logMsg('Sukuna: "Dismantle." — '+dmg+' DAMAGE! (Extra turn granted)','lc');
+      GS.bonusTurn=true;
+      triggerShake(18);
+      makeSound('bigHit');
+      updateBars();
+      GS.animating=false;
+    }, 500);
+  }, 700);
+}
+
+// 4. Nanami's Overtime
+function shenanigan_nanami(){
+  GS.animating=true;
+  logMsg('💼 NANAMI: "Overtime." — Nanami deals a precise 7:3 ratio strike!','ls');
+  addAnim('slash',{x:582,y:216,color:'#ddaa44',dur:20,big:false});
+  setTimeout(()=>{
+    const dmg=75;
+    applyEDmg(dmg);
+    const ceDeduct=Math.min(15,GS.player.ce);
+    GS.player.ce-=ceDeduct;
+    logMsg('Nanami dealt '+dmg+' dmg — and charges '+ceDeduct+' CE as overtime fee.','ls');
+    makeSound('hit');
+    updateBars();
+    GS.animating=false;
+  },400);
+}
+
+// 5. Culling Game rule
+const CULLING_RULES = [
+  {name:'Rule 4: CE Overdrive', desc:'CE costs halved for 2 turns', apply:(gs)=>{ gs.cullingCEHalf=2; }},
+  {name:'Rule 9: Immortality', desc:'HP cannot drop below 1 for 2 turns', apply:(gs)=>{ gs.cullingShield=2; }},
+  {name:'Rule 17: Carnage', desc:'All attacks deal x2 damage for 2 turns', apply:(gs)=>{ gs.cullingDouble=2; }},
+  {name:'Rule 29: Flow State', desc:'CE regen x2 for 2 turns', apply:(gs)=>{ gs.cullingRegen=2; }},
+];
+function shenanigan_cullingGame(){
+  const rule = CULLING_RULES[Math.floor(Math.random()*CULLING_RULES.length)];
+  rule.apply(GS);
+  addAnim('domain',{kanji:'刈', name:'CULLING GAME: '+rule.name, dur:60, color:'#8844ff'});
+  triggerFlash('#8844ff',0.6,3);
+  logMsg('⚔ CULLING GAME — '+rule.name+': '+rule.desc,'lu');
+  makeSound('domain');
+  updateBars();
+}
+
+// 6. Yuji dies (again)
+function shenanigan_yujiDies(){
+  GS.animating=true;
+  GS.player.hp=0;
+  updateBars();
+  triggerFlash('#ff0000',1.0,6);
+  triggerShake(20);
+  logMsg('💀 Yuji Itadori has died. (Again.) This is fine.','lc');
+  setTimeout(()=>{
+    GS.player.hp=Math.min(40,GS.player.maxHp);
+    spawnP(195,216,40,'#44ff88',5,60);
+    addAnim('explode',{x:195,y:216,maxR:80,color:'#44ff88',dur:40});
+    triggerFlash('#44ff88',0.8,4);
+    logMsg('...Reverse Cursed Technique activates. Yuji lives. '+GS.player.name+': "I\'m used to it."','lu');
+    makeSound('mahoraga');
+    updateBars();
+    GS.animating=false;
+  },900);
+}
+
+// 7. Gojo puts on headphones
+function shenanigan_gojoMusic(){
+  GS.gojoVibing=1;
+  addAnim('wave',{x:195,y:216,maxR:120,color:'#00ccff',dur:36});
+  logMsg('🎵 Gojo puts on his headphones. CE costs FREE this turn — he\'s vibing.','lu');
+  triggerFlash('#00ccff',0.5,3);
+  makeSound('jackpot');
+  updateBars();
+}
+
+// 8. Reverse Cursed Technique activates
+function shenanigan_reversedCursed(){
+  const heal=30+Math.floor(Math.random()*31);
+  const actual=Math.min(heal,GS.player.maxHp-GS.player.hp);
+  GS.player.hp+=actual;
+  spawnP(195,216,30,'#44ffaa',5,55);
+  addAnim('wave',{x:195,y:216,maxR:100,color:'#44ffaa',dur:32});
+  logMsg('✨ Reverse Cursed Technique! Healed '+actual+' HP spontaneously!','lh');
+  triggerFlash('#44ffaa',0.6,3);
+  makeSound('deflect');
+  updateBars();
+}
+
+// 9. Mei Mei's Ravens spy
+function shenanigan_meiMei(){
+  const moves=Object.values(GS.enemy.moves);
+  const next=moves[Math.floor(Math.random()*moves.length)];
+  addStatus(GS.eStatuses,'stun',{turns:2});
+  logMsg('🐦 MEI MEI\'s ravens spy on '+GS.enemy.name+'! They will use: "'+next.name+'" — enemy stunned for 1 turn!','lu');
+  triggerFlash('#ddddaa',0.4,2);
+  updateBars();
+}
+
+// 10. Kenjaku's Scheme
+function shenanigan_kenjakuScheme(){
+  const newEnemies=ENEMIES.filter(e=>e.id!==GS.enemy.id);
+  if(!newEnemies.length) return;
+  const newE=JSON.parse(JSON.stringify(newEnemies[Math.floor(Math.random()*newEnemies.length)]));
+  const hpRatio=GS.enemy.hp/GS.enemy.maxHp;
+  newE.hp=Math.max(1,Math.floor(newE.maxHp*hpRatio));
+  GS.enemy=newE;
+  setCharOverlay('enemy',newE.id,newE.glow||newE.color);
+  addAnim('domain',{kanji:'脳', name:'KENJAKU SCHEME', dur:55, color:'#335533'});
+  triggerFlash('#335533',0.7,4);
+  logMsg('🧠 KENJAKU\'s brain transplant! The enemy transforms into '+newE.name+'!','lc');
+  makeSound('domain');
+  document.getElementById('e-bars-name').textContent=newE.name.toUpperCase();
+  updateBars();
+}
+
+// ============================================================
 //  PLAYER MOVE
 // ============================================================
 function doPlayerMove(key){
   if(!GS.playerTurn||!GS.battleActive||GS.animating)return;
   const p=GS.player,e=GS.enemy;
   const move=p.moves[key];
-  if(move.cost>0&&p.ce<move.cost){logMsg('Not enough Cursed Energy!','ls');return;}
+  let effCost=move.cost;
+  if(GS.gojoVibing>0) effCost=0;
+  else if(GS.cullingCEHalf>0) effCost=Math.ceil(effCost/2);
+  if(effCost>0&&p.ce<effCost){logMsg('Not enough Cursed Energy!','ls');return;}
 
   GS.animating=true; lockBtns();
-  p.ce=Math.max(0,p.ce-move.cost);
+  p.ce=Math.max(0,p.ce-effCost);
   GS.stats.moves++;GS.stats.turns++;
   sfxSpecial();
 
   execPlayerMove(key,move,()=>{
-    p.ce=Math.min(p.maxCe,p.ce+12+(p.ceRegen||0)); // CE regen (+ upgrade)
+    p.ce=Math.min(p.maxCe,p.ce+(12+(p.ceRegen||0))*(GS.cullingRegen>0?2:1)); // CE regen (+ upgrade, x2 if culling rule)
     updateBars();
     if(e.hp<=0){onEnemyDead();return;}
     if(GS.bonusTurn){
@@ -4691,6 +4896,20 @@ function doPlayerMove(key){
       return;
     }
     tickJackpotMode();
+    // Tick culling effects
+    if(GS.cullingCEHalf>0){ GS.cullingCEHalf--; if(!GS.cullingCEHalf) logMsg('Rule expired: CE costs normal.','ls'); }
+    if(GS.cullingShield>0){ GS.cullingShield--; }
+    if(GS.cullingDouble>0){ GS.cullingDouble--; if(!GS.cullingDouble) logMsg('Rule expired: Damage normal.','ls'); }
+    if(GS.cullingRegen>0){ GS.cullingRegen--; if(!GS.cullingRegen) logMsg('Rule expired: CE regen normal.','ls'); }
+    if(GS.gojoVibing>0){ GS.gojoVibing--; }
+    maybeTriggerShenanigan();
+    if(GS.bonusTurn){
+      GS.bonusTurn=false;
+      logMsg('🎰 An extra turn is granted!','lu');
+      GS.playerTurn=true; GS.animating=false; updateBars();
+      return;
+    }
+    if(e.hp<=0){onEnemyDead();return;}
     GS.playerTurn=false; updateBars();
     setTimeout(()=>{
       tickStatuses('enemy');
