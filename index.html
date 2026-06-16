@@ -294,6 +294,54 @@ body {
 /* canvas shake */
 @keyframes shake { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-7px,2px)} 40%{transform:translate(7px,-2px)} 60%{transform:translate(-5px,2px)} 80%{transform:translate(4px,-1px)} }
 .shake-anim { animation:shake 0.38s ease; }
+
+/* ===== SHOP ===== */
+#battle-coins {
+  position:absolute; top:10px; right:14px;
+  background:#1a1430; border:1px solid #ffcc0088; border-radius:5px;
+  color:#ffcc00; font-size:14px; padding:4px 12px; letter-spacing:2px;
+  box-shadow:0 0 14px #ffcc0033; z-index:5;
+}
+.shop-container {
+  width:min(720px,92vw); max-height:88vh; overflow-y:auto;
+  background:linear-gradient(160deg,#120a26,#0a0a1a);
+  border:2px solid #7b2fff66; border-radius:10px;
+  padding:26px 30px; box-shadow:0 0 50px #7b2fff44;
+  display:flex; flex-direction:column; align-items:center; gap:16px;
+}
+.shop-container h2 { color:#cc99ff; letter-spacing:4px; margin:0; text-shadow:0 0 18px #7b2fff88; }
+#shop-coins-display {
+  color:#ffcc00; font-size:18px; letter-spacing:3px;
+  background:#1a1430; border:1px solid #ffcc0066; border-radius:6px;
+  padding:6px 22px; box-shadow:0 0 18px #ffcc0033;
+}
+.shop-tabs { display:flex; gap:12px; }
+.shop-tab-btn {
+  padding:10px 24px; font-size:13px; letter-spacing:2px; cursor:pointer;
+  background:#1a1238; color:#9988cc; border:1px solid #553388; border-radius:5px;
+  transition:all 0.2s;
+}
+.shop-tab-btn:hover { background:#2a1a55; color:#fff; }
+.shop-tab-btn.active { background:linear-gradient(135deg,#4a0099,#7b2fff); color:#fff; border-color:#9b4fff; box-shadow:0 0 20px #7b2fff88; }
+#shop-content { width:100%; display:flex; flex-direction:column; gap:10px; }
+.shop-item {
+  display:grid; grid-template-columns:1fr auto; align-items:center; gap:10px;
+  background:#13102a; border:1px solid #33285a; border-radius:7px;
+  padding:12px 18px;
+}
+.shop-item-name { color:#eee; font-size:15px; letter-spacing:1px; }
+.shop-item-name .shop-lvl { color:#ffcc00; font-size:12px; margin-left:8px; }
+.shop-item-desc { grid-column:1; color:#8877aa; font-size:11px; margin-top:3px; }
+.shop-buy-btn {
+  grid-column:2; grid-row:1 / span 2; align-self:center;
+  padding:9px 18px; font-size:12px; letter-spacing:1px; cursor:pointer;
+  background:linear-gradient(135deg,#aa7700,#ffcc00); color:#1a1010;
+  border:1px solid #ffdd44; border-radius:5px; font-weight:bold; transition:all 0.2s;
+}
+.shop-buy-btn:hover { box-shadow:0 0 18px #ffcc0088; transform:scale(1.05); }
+.shop-buy-btn.equip { background:linear-gradient(135deg,#4a0099,#7b2fff); color:#fff; border-color:#9b4fff; }
+.shop-buy-btn.equipped { background:#1a3a1a; color:#66ff88; border-color:#44aa66; cursor:default; }
+.shop-buy-btn.cant { background:#2a2233; color:#776688; border-color:#443355; cursor:not-allowed; box-shadow:none; }
 </style>
 </head>
 <body>
@@ -310,6 +358,7 @@ body {
   <div style="display:flex;gap:14px;flex-wrap:wrap;justify-content:center;">
     <button class="sub-btn" id="story-btn">STORY MODE 物語</button>
     <button class="sub-btn" id="training-btn">TRAINING CAMP 修行</button>
+    <button class="sub-btn" id="shop-btn">SHOP 呪具屋</button>
   </div>
   <div style="margin-top:24px;font-size:10px;color:#3a1a60;letter-spacing:3px;">「悪霊を祓え」EXORCISE THE CURSES</div>
 </div>
@@ -327,12 +376,14 @@ body {
   <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
     <button class="sub-btn" id="cs-training-btn">TRAINING CAMP 修行</button>
     <button class="sub-btn" id="cs-story-btn">STORY MODE 物語</button>
+    <button class="sub-btn" id="cs-shop-btn">SHOP 呪具屋</button>
   </div>
 </div>
 
 <!-- BATTLE -->
 <div id="battle-screen" class="screen">
   <div class="enemy-banner" id="enemy-banner">ENEMY: MAHITO — 真人 | IDLE TRANSFIGURATION</div>
+  <div id="battle-coins">💰 0</div>
   <canvas id="battle-canvas" width="780" height="370"></canvas>
   <div class="bars-wrap">
     <div class="bars-side">
@@ -441,6 +492,20 @@ body {
       <div class="log-panel-title">訓練記録 · LOG</div>
       <div class="log-scroll" id="train-log"></div>
     </div>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div id="shop-screen" class="screen">
+  <div class="shop-container">
+    <h2>呪具屋 · SHOP</h2>
+    <div id="shop-coins-display">💰 Coins: 0</div>
+    <div class="shop-tabs">
+      <button class="shop-tab-btn" id="shop-tab-skins" onclick="shopTab('skins')">SKINS 衣装</button>
+      <button class="shop-tab-btn" id="shop-tab-upgrades" onclick="shopTab('upgrades')">UPGRADES 強化</button>
+    </div>
+    <div id="shop-content"></div>
+    <button class="sub-btn" onclick="setScreen('select')">◀ BACK</button>
   </div>
 </div>
 
@@ -556,6 +621,36 @@ const CHARS = [
       s2:      {name:'◈ Dismantle ×3',   cost:35, dmg:[18,28], type:'slash', pmulti:3},
       ultimate:{name:'★ Malevolent Shrine',cost:60,dmg:[110,150], type:'ultimate'}
     }
+  },
+  {
+    id:'hakari', name:'Hakari Kinji',
+    title:'秤 金次 · IDLE DEATH GAMBLE',
+    lore:'A reckless gambler whose Cursed Technique turns combat into a pachinko jackpot. When fortune favors him he becomes nearly unstoppable, healing and striking with reckless abandon.',
+    color:'#ffcc00', glow:'#ddaa2288',
+    hp:135, maxHp:135, ce:120, maxCe:120,
+    atk:90, def:74, spd:84,
+    sv:{hp:88,atk:90,def:74,spd:84},
+    moves:{
+      basic:   {name:'⚔ Jacket Rush',     cost:0,  dmg:[18,28], type:'physical'},
+      s1:      {name:'🎰 Jackpot',          cost:25, dmg:[0,0],   type:'gamble'},
+      s2:      {name:'◈ Reversal Ritual',   cost:40, dmg:[44,62], type:'cursed', heal:18},
+      ultimate:{name:'★ Domain: Restless Gambler', cost:55, dmg:[68,94], type:'ultimate'}
+    }
+  },
+  {
+    id:'yuta', name:'Yuta Okkotsu',
+    title:'乙骨 憂太 · RIKA',
+    lore:'A Special Grade sorcerer haunted by the cursed spirit Rika. He copies the techniques of others and, when Rika manifests fully, unleashes overwhelming pure love and destruction.',
+    color:'#ff4488', glow:'#ff226688',
+    hp:128, maxHp:128, ce:130, maxCe:130,
+    atk:92, def:78, spd:86,
+    sv:{hp:84,atk:92,def:78,spd:86},
+    moves:{
+      basic:   {name:'⚔ Rika Smash',      cost:0,  dmg:[20,30], type:'physical'},
+      s1:      {name:'◉ Copy',             cost:22, dmg:[30,44], type:'cursed'},
+      s2:      {name:'◆ Rika Manifest',     cost:34, dmg:[36,52], type:'cursed', stun:0.25},
+      ultimate:{name:'★ True Mutual Love',  cost:60, dmg:[78,108], type:'ultimate', heal:40}
+    }
   }
 ];
 
@@ -634,7 +729,67 @@ const GS = {
 
   // story
   storyMode: false,
+
+  // economy / progression
+  coins: 0,
+  ownedSkins: [],            // array of skin ids
+  equippedSkins: {},         // charId -> skinId
+  upgrades: {hp_boost:0, atk_boost:0, ce_boost:0, regen:0},
+  bonusTurn: false,
 };
+
+// ============================================================
+//  SKINS & UPGRADES DATA
+// ============================================================
+const SKINS = [
+  { id:'yuji_prison', charId:'yuji', name:'Prison Realm', cost:120,
+    palOverride:{ 'P':'#444466', 'p':'#6666aa', 'D':'#0a0a18', 'd':'#05050f', 'n':'#bbaa99', 'N':'#998877' } },
+  { id:'gojo_unmasked', charId:'gojo', name:'Six Eyes Unsealed', cost:150,
+    palOverride:{ 'D':'#101830', 'd':'#0a1428', 'B':'#0a2244', 'b':'#3366cc', 'u':'#66e0ff' } },
+  { id:'sukuna_golden', charId:'sukuna', name:'Golden Curse', cost:200,
+    palOverride:{ 'L':'#553300', 'R':'#ffaa00', 'r':'#ffcc33', 'F':'#ffdd44', 'f':'#ffee88' } },
+  { id:'yuta_crimson', charId:'yuta', name:'Crimson Rika', cost:140,
+    palOverride:{ 'x':'#ff2244', 'a':'#ff5577', 'k':'#1a0008', 'K':'#2a0010' } },
+  { id:'hakari_neon', charId:'hakari', name:'Neon Jackpot', cost:130,
+    palOverride:{ 'K':'#2a1040', 'y':'#00ffcc', 'Y':'#66ffee', 'H':'#ff8844', 'h':'#cc5522' } },
+];
+
+const UPGRADES = [
+  { id:'hp_boost',  name:'Vitality',      desc:'+15 max HP per level',          cost:50, maxLevel:3 },
+  { id:'atk_boost', name:'Cursed Might',  desc:'+8% damage per level',          cost:60, maxLevel:3 },
+  { id:'ce_boost',  name:'Energy Pool',   desc:'+10 max Cursed Energy per level',cost:40, maxLevel:3 },
+  { id:'regen',     name:'CE Regen',      desc:'+5 CE regen per turn per level', cost:80, maxLevel:2 },
+];
+
+function saveProgress(){
+  try{
+    localStorage.setItem('jjk_coins', String(GS.coins));
+    localStorage.setItem('jjk_skins', JSON.stringify(GS.ownedSkins));
+    localStorage.setItem('jjk_equipped', JSON.stringify(GS.equippedSkins));
+    localStorage.setItem('jjk_upgrades', JSON.stringify(GS.upgrades));
+  }catch(e){}
+}
+function loadProgress(){
+  try{
+    GS.coins=parseInt(localStorage.getItem('jjk_coins')||'0',10)||0;
+    GS.ownedSkins=JSON.parse(localStorage.getItem('jjk_skins')||'[]');
+    GS.equippedSkins=JSON.parse(localStorage.getItem('jjk_equipped')||'{}');
+    const up=JSON.parse(localStorage.getItem('jjk_upgrades')||'{}');
+    GS.upgrades={hp_boost:0, atk_boost:0, ce_boost:0, regen:0, ...up};
+  }catch(e){ GS.coins=0; GS.ownedSkins=[]; GS.equippedSkins={}; GS.upgrades={hp_boost:0,atk_boost:0,ce_boost:0,regen:0}; }
+}
+
+// Apply permanent upgrades to a freshly-copied player object
+function applyUpgrades(p){
+  const u=GS.upgrades||{};
+  const hpAdd=(u.hp_boost||0)*15;
+  const ceAdd=(u.ce_boost||0)*10;
+  p.maxHp+=hpAdd; p.hp+=hpAdd;
+  p.maxCe+=ceAdd; p.ce+=ceAdd;
+  p.atk=Math.round(p.atk*(1+(u.atk_boost||0)*0.08));
+  p.ceRegen=(u.regen||0)*5;
+  return p;
+}
 
 // ============================================================
 //  CANVAS / PARTICLES
@@ -1204,6 +1359,144 @@ jogo:[
 '   LL     LL    ',
 ' kLLk     kLLk  ',
 ' kkkk     kkkk  ',
+]],
+hakari:[
+[// idle — brown spiky hair, dark jacket, confident
+'  h h h h h h   ',
+' hHhHhHhHhHhHh  ',
+' hHHhHHhHHhHHh  ',
+' hHHnnnnnnnnHH  ',
+' HHnnnnnnnnnnH  ',
+' HHnnEenEennHH  ',
+' HHnnnnnnnnnnH  ',
+' HHnnnmmmnnHHH  ',
+'  HHnnnnnnHHy   ',
+'   kknnnnkkyy   ',
+'  kKKKKKKKKKk   ',
+'KKKKKKKyKyKKKKKK',
+'KKKKKKKKKKKKkKKK',
+' kKKKKKKKKKKk   ',
+'  KKkkkkkkkKK   ',
+'  KKKKKKKKKKK   ',
+'  KKKKyyyyKKK   ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+' kKKk     kKKk  ',
+' kkkk     kkkk  ',
+],
+[// attack — jackpot, gold burst arm out
+'  h h h h h h   ',
+' hHhHhHhHhHhHh  ',
+' hHHhHHhHHhHHh  ',
+' hHHnnnnnnnnHH  ',
+' HHnnnnnnnnnnH  ',
+' HHnnEenEennHH  ',
+' HHnnnnnnnnnnH  ',
+' HHnnnmmmnnHHH  ',
+'  HHnnnnnnHHy   ',
+'   kknnnnkkyy   ',
+'  kKKKKKKKKKk   ',
+'KKKKKKKyKyKKKKyY',
+'  KKKKKKKKKKyYyY',
+'  kKKKKKKKKKyYy ',
+'   KKkkkkkkkKK  ',
+'   KKKKKKKKKKK  ',
+'   KKKKyyyyKKK  ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+'   KK     KK    ',
+' kKKk     kKKk  ',
+' kkkk     kkkk  ',
+]],
+yuta:[
+[// idle — black hair, black coat, pink Rika aura
+'x  kkkkkkkk   x ',
+' x kkkkkkkk x   ',
+'  kkkkkkkkkk    ',
+'  kkknnnnnnkk   ',
+'  kknnnnnnnnkk  ',
+'  kknnEenEennk  ',
+'  kknnnnnnnnkk  ',
+'  kknnnmmmnnkk  ',
+'   kknnnnnnkkx  ',
+'    kknnnnkk    ',
+'   kkkkkkkkkk   ',
+'x kkkkkkkkkkkk x',
+'  kkkkkkkkkkkk  ',
+'  akkkkkkkkkka  ',
+'   kkkkkkkkkk   ',
+'   kkkkkkkkkk   ',
+'   kkkxxxxkkk   ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+' kkkk     kkkk  ',
+' kkkk     kkkk  ',
+],
+[// attack — Rika aura surges, arm out
+'x xxkkkkkkkkx x ',
+' xxxkkkkkkkkxx  ',
+' x kkkkkkkkkk x ',
+'  kkknnnnnnkk   ',
+'  kknnnnnnnnkk  ',
+'  kknnEenEennk  ',
+'  kknnnnnnnnkk  ',
+'  kknnnmmmnnkk  ',
+'   kknnnnnnkkx  ',
+'    kknnnnkk    ',
+'   kkkkkkkkkk   ',
+'x kkkkkkkkkkkxax',
+'  kkkkkkkkkkxaxa',
+'  akkkkkkkkkkxax',
+'   kkkkkkkkkk   ',
+'   kkkkkkkkkk   ',
+'   kkkxxxxkkk   ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+'   kk     kk    ',
+' kkkk     kkkk  ',
+' kkkk     kkkk  ',
 ]]};
 
 // Divine Dog sprite (12×9, 2 run frames)
@@ -1243,10 +1536,19 @@ let spriteFrame=0, spriteTimer=0;
 const SPRITE_FPS=8; // how many game-frames per sprite frame
 let dogAnim={active:false,x:0,y:0,tx:0,ty:0,t:0,maxT:30,frame:0,frameTimer:0,flip:false};
 
+function getSkinPalette(id){
+  const skinId=GS.equippedSkins&&GS.equippedSkins[id];
+  if(!skinId) return PAL;
+  const skin=SKINS.find(s=>s.id===skinId&&s.charId===id);
+  if(!skin) return PAL;
+  return Object.assign({}, PAL, skin.palOverride);
+}
+
 function drawPixelChar(ctx, id, frameIdx, cx, cy, scale=4, flip=false) {
   const frames = SPR[id];
   if(!frames) return;
   const frame = frames[Math.min(frameIdx, frames.length-1)];
+  const pal = getSkinPalette(id);
   const sh = frame.length;
   const sw = frame[0].length;
   ctx.save();
@@ -1258,7 +1560,7 @@ function drawPixelChar(ctx, id, frameIdx, cx, cy, scale=4, flip=false) {
   for(let row=0;row<sh;row++){
     for(let col=0;col<sw;col++){
       const ch=frame[row][col];
-      const color=PAL[ch];
+      const color=pal[ch];
       if(!color) continue;
       ctx.fillStyle=color;
       ctx.fillRect(cx + (col - sw/2)*scale, cy - sh*scale + row*scale, scale, scale);
@@ -2423,7 +2725,7 @@ function setScreen(name){
   const map={
     title:'title-screen', select:'select-screen',
     battle:'battle-screen', between:'between-screen', result:'result-screen',
-    story:'story-screen', training:'training-screen'
+    story:'story-screen', training:'training-screen', shop:'shop-screen'
   };
   const el=document.getElementById(map[name]);
   if(el)el.classList.add('active');
@@ -2488,7 +2790,8 @@ function startGame(){
   GS.enemyIdx=0;
   GS.stats={dmg:0,moves:0,turns:0,killed:0};
   const charDef=CHARS.find(c=>c.id===GS.selectedChar);
-  GS.player=JSON.parse(JSON.stringify(charDef));
+  GS.player=applyUpgrades(JSON.parse(JSON.stringify(charDef)));
+  GS.bonusTurn=false;
   initBattle();
 }
 
@@ -2540,6 +2843,7 @@ function initBattle(){
 // ============================================================
 function updateBars(){
   const p=GS.player,e=GS.enemy;
+  const cd=document.getElementById('battle-coins'); if(cd) cd.textContent='💰 '+GS.coins;
   if(!p||!e)return;
 
   const phpct=Math.max(0,p.hp/p.maxHp*100);
@@ -2699,9 +3003,15 @@ function doPlayerMove(key){
   sfxSpecial();
 
   execPlayerMove(key,move,()=>{
-    p.ce=Math.min(p.maxCe,p.ce+12); // CE regen
+    p.ce=Math.min(p.maxCe,p.ce+12+(p.ceRegen||0)); // CE regen (+ upgrade)
     updateBars();
     if(e.hp<=0){onEnemyDead();return;}
+    if(GS.bonusTurn){
+      GS.bonusTurn=false;
+      logMsg('🎰 JACKPOT! Restless Gambler grants a bonus turn!','lu');
+      GS.playerTurn=true; GS.animating=false; updateBars();
+      return;
+    }
     GS.playerTurn=false; updateBars();
     setTimeout(()=>{
       tickStatuses('enemy');
@@ -2738,7 +3048,34 @@ function execPlayerMove(key,move,cb){
     },320);
 
   } else if(key==='s1'){
-    if(move.shield){
+    if(move.type==='gamble'){
+      // Hakari Jackpot — 50% deal 80 dmg + bonus turn, 50% heal 30
+      addAnim('charge',{x:px+40,y:py-50,maxR:60,color:'#ffcc00',dur:24});
+      spawnSpiralP(px,py-50,22,'#ffcc00');
+      setTimeout(()=>{
+        const win=Math.random()<0.5;
+        if(win){
+          addAnim('proj',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ffee66',size:18,dur:20});
+          setTimeout(()=>{
+            const dmg=80;
+            applyEDmg(dmg);
+            spawnFireP(ex,ey-42,40); spawnP(ex,ey-42,16,'#ffee66',6,55);
+            triggerFlash('#ffee66',0.55); triggerShake(12);
+            addAnim('explode',{x:ex,y:ey-42,maxR:120,color:'#ffcc00',dur:42});
+            GS.bonusTurn=true;
+            logMsg('🎰🎰🎰 JACKPOT HIT! '+dmg+' damage — Hakari gets another turn!','lu');
+            sfxUlt(); updateBars(); setTimeout(cb,480);
+          },240);
+        } else {
+          const h=Math.min(30,p.maxHp-p.hp); p.hp+=h;
+          spawnP(px,py-42,16,'#44ff88',6,50);
+          addAnim('wave',{x:px,y:py-42,maxR:80,color:'#44ff88',dur:30});
+          triggerFlash('#44ff88',0.3);
+          logMsg('Jackpot misses — but Hakari recovers '+h+' HP!','lh');
+          sfxBlock(); updateBars(); setTimeout(cb,420);
+        }
+      },360);
+    } else if(move.shield){
       // Gojo Infinity — charge then shield
       addAnim('charge',{x:px,y:py-50,maxR:80,color:'#00ccff',dur:30});
       spawnSpiralP(px,py-50,18,'#00ccff');
@@ -2838,7 +3175,8 @@ function execPlayerMove(key,move,cb){
         triggerFlash(p.color,0.36);triggerShake(7);
         if(crit)logMsg('★ CRITICAL! '+move.name+' — '+dmg+' damage!','lc');
         else logMsg(move.name+' — '+dmg+' damage!','lp');
-        if(move.stun&&Math.random()<move.stun){addStatus(GS.eStatuses,'stun',{turns:1});logMsg('Enemy stunned by lightning!','ls');}
+        if(move.stun&&Math.random()<move.stun){addStatus(GS.eStatuses,'stun',{turns:1});logMsg('Enemy stunned!','ls');}
+        if(move.heal){const h=Math.min(move.heal,p.maxHp-p.hp);p.hp+=h;if(h>0){logMsg(p.name+' recovers '+h+' HP!','lh');spawnP(px,py-42,12,'#44ff88',5,40);}}
         sfxHit(); updateBars(); setTimeout(cb,320);
       },330);
     }
@@ -2961,6 +3299,60 @@ function execPlayerMove(key,move,cb){
               updateBars(); setTimeout(cb,860);
             },300);
           },300);
+        },500);
+      },400);
+
+    } else if(p.id==='hakari'){
+      // Domain: Restless Gambler — pachinko jackpot frenzy
+      addAnim('charge',{x:px+40,y:py-60,maxR:90,color:'#ffcc00',dur:36});
+      spawnSpiralP(px,py-50,34,'#ffcc00');
+      setTimeout(()=>{
+        addAnim('domain',{kanji:'坐',name:'RESTLESS GAMBLER',dur:84,color:'#ffcc00'});
+        triggerFlash('#ffee66',0.6);
+        setTimeout(()=>{
+          let hits=4;
+          const burst=()=>{
+            if(hits<=0){
+              const h=Math.min(30,p.maxHp-p.hp); p.hp+=h;
+              GS.bonusTurn=true;
+              logMsg('Jackpot frenzy! Hakari heals '+h+' HP and keeps gambling — bonus turn!','lu');
+              updateBars(); setTimeout(cb,700); return;
+            }
+            addAnim('proj',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ffee66',size:14,dur:16});
+            setTimeout(()=>{
+              const d=calcDmg(move.dmg,p.atk*0.35,e.def,isCrit());
+              applyEDmg(d);
+              spawnFireP(ex,ey-42,18); triggerShake(8); triggerFlash('#ffcc00',0.3);
+              addAnim('explode',{x:ex,y:ey-42,maxR:90,color:'#ffcc00',dur:30});
+              logMsg('Jackpot strike — '+d+' DAMAGE!','lu');
+              updateBars(); hits--; burst();
+            },220);
+          };
+          burst();
+        },480);
+      },380);
+
+    } else if(p.id==='yuta'){
+      // Domain Expansion: True Mutual Love — Rika fully manifests
+      addAnim('charge',{x:px+40,y:py-60,maxR:95,color:'#ff4488',dur:38});
+      spawnSpiralP(px,py-50,34,'#ff4488');
+      setTimeout(()=>{
+        addAnim('domain',{kanji:'愛',name:'TRUE MUTUAL LOVE',dur:88,color:'#ff4488'});
+        triggerFlash('#ff66aa',0.7);
+        setTimeout(()=>{
+          addAnim('beam',{sx:px+45,sy:py-52,tx:ex-42,ty:ey-52,color:'#ff4488',dur:30});
+          setTimeout(()=>{
+            addAnim('explode',{x:ex,y:ey-42,maxR:165,color:'#ff2266',dur:56});
+            spawnCurseP(ex,ey-42,88);
+            for(let i=0;i<10;i++) spawnP(ex+(Math.random()-0.5)*140,ey+(Math.random()-0.5)*130,5,'#ff66aa',6,70);
+            triggerShake(20); triggerFlash('#ff2266',0.8);
+            const dmg=calcDmg(move.dmg,p.atk,e.def,isCrit());
+            applyEDmg(dmg);
+            const h=Math.min(move.heal||40,p.maxHp-p.hp); p.hp+=h;
+            spawnP(px,py-42,16,'#44ff88',6,50);
+            logMsg('Rika overflows with love — '+dmg+' DAMAGE! Yuta heals '+h+' HP!','lu');
+            updateBars(); setTimeout(cb,860);
+          },440);
         },500);
       },400);
     }
@@ -3170,6 +3562,9 @@ function onEnemyDead(){
   GS.battleActive=false;
   if(rafId)cancelAnimationFrame(rafId);
   GS.stats.killed++;
+  const earned=10+Math.floor(Math.random()*21); // 10-30 coins
+  GS.coins+=earned; saveProgress();
+  logMsg('💰 +'+earned+' coins! (Total: '+GS.coins+')','ls');
   sfxVictory();
   addAnim('explode',{x:582,y:216,maxR:190,color:GS.enemy.color,dur:62});
   spawnCurseP(582,216,85);
@@ -3237,7 +3632,8 @@ function showDefeat(){
 function doRestart(){
   GS.player=null;
   const charDef=CHARS.find(c=>c.id===GS.selectedChar);
-  if(charDef)GS.player=JSON.parse(JSON.stringify(charDef));
+  if(charDef)GS.player=applyUpgrades(JSON.parse(JSON.stringify(charDef)));
+  GS.bonusTurn=false;
   GS.enemyIdx=0;
   GS.stats={dmg:0,moves:0,turns:0,killed:0};
   if(GS.player)initBattle();
@@ -3556,18 +3952,96 @@ function exitTraining(){
 // ============================================================
 document.getElementById('start-btn').addEventListener('click',()=>{ sfxMenu(); showCharSelect(); });
 document.getElementById('confirm-btn').addEventListener('click',startGame);
+// ============================================================
+//  SHOP
+// ============================================================
+let shopCurrentTab='skins';
+function openShop(){ sfxMenu(); setScreen('shop'); shopTab(shopCurrentTab); }
+function updateShopCoins(){
+  const el=document.getElementById('shop-coins-display');
+  if(el) el.textContent='💰 Coins: '+GS.coins;
+}
+function shopTab(tab){
+  shopCurrentTab=tab;
+  document.getElementById('shop-tab-skins').classList.toggle('active',tab==='skins');
+  document.getElementById('shop-tab-upgrades').classList.toggle('active',tab==='upgrades');
+  updateShopCoins();
+  const c=document.getElementById('shop-content');
+  c.innerHTML='';
+  if(tab==='skins') renderShopSkins(c); else renderShopUpgrades(c);
+}
+function charName(id){ const ch=CHARS.find(c=>c.id===id); return ch?ch.name:id; }
+function renderShopSkins(c){
+  SKINS.forEach(skin=>{
+    const owned=GS.ownedSkins.includes(skin.id);
+    const equipped=GS.equippedSkins[skin.charId]===skin.id;
+    const card=document.createElement('div');
+    card.className='shop-item';
+    let btn;
+    if(equipped){ btn='<button class="shop-buy-btn equipped" disabled>EQUIPPED ✓</button>'; }
+    else if(owned){ btn='<button class="shop-buy-btn equip" onclick="equipSkin(\''+skin.id+'\')">EQUIP</button>'; }
+    else { btn='<button class="shop-buy-btn'+(GS.coins<skin.cost?' cant':'')+'" onclick="buySkin(\''+skin.id+'\')">BUY · '+skin.cost+' 💰</button>'; }
+    card.innerHTML=
+      '<div class="shop-item-name">'+skin.name+'</div>'+
+      '<div class="shop-item-desc">'+charName(skin.charId)+' skin</div>'+
+      btn;
+    c.appendChild(card);
+  });
+}
+function renderShopUpgrades(c){
+  UPGRADES.forEach(up=>{
+    const lvl=GS.upgrades[up.id]||0;
+    const maxed=lvl>=up.maxLevel;
+    const card=document.createElement('div');
+    card.className='shop-item';
+    let btn;
+    if(maxed){ btn='<button class="shop-buy-btn equipped" disabled>MAX LV'+up.maxLevel+'</button>'; }
+    else { btn='<button class="shop-buy-btn'+(GS.coins<up.cost?' cant':'')+'" onclick="buyUpgrade(\''+up.id+'\')">BUY · '+up.cost+' 💰</button>'; }
+    card.innerHTML=
+      '<div class="shop-item-name">'+up.name+' <span class="shop-lvl">Lv '+lvl+'/'+up.maxLevel+'</span></div>'+
+      '<div class="shop-item-desc">'+up.desc+'</div>'+
+      btn;
+    c.appendChild(card);
+  });
+}
+function buySkin(id){
+  const skin=SKINS.find(s=>s.id===id); if(!skin) return;
+  if(GS.ownedSkins.includes(id)) return;
+  if(GS.coins<skin.cost){ sfxBlock(); return; }
+  GS.coins-=skin.cost; GS.ownedSkins.push(id);
+  GS.equippedSkins[skin.charId]=id;
+  saveProgress(); sfxSpecial(); shopTab('skins');
+}
+function equipSkin(id){
+  const skin=SKINS.find(s=>s.id===id); if(!skin) return;
+  GS.equippedSkins[skin.charId]= (GS.equippedSkins[skin.charId]===id)? undefined : id;
+  if(GS.equippedSkins[skin.charId]===undefined) delete GS.equippedSkins[skin.charId];
+  saveProgress(); sfxMenu(); shopTab('skins');
+}
+function buyUpgrade(id){
+  const up=UPGRADES.find(u=>u.id===id); if(!up) return;
+  const lvl=GS.upgrades[id]||0;
+  if(lvl>=up.maxLevel){ return; }
+  if(GS.coins<up.cost){ sfxBlock(); return; }
+  GS.coins-=up.cost; GS.upgrades[id]=lvl+1;
+  saveProgress(); sfxSpecial(); shopTab('upgrades');
+}
+
 document.getElementById('story-btn').addEventListener('click',()=>{ GS.selectedChar=GS.selectedChar||'yuji'; startStory(); });
 document.getElementById('training-btn').addEventListener('click',()=>{ GS.selectedChar=GS.selectedChar||'yuji'; startTraining(); });
 document.getElementById('cs-story-btn').addEventListener('click',startStory);
 document.getElementById('cs-training-btn').addEventListener('click',startTraining);
 document.getElementById('story-next-btn').addEventListener('click',storyNext);
 document.getElementById('story-skip-btn').addEventListener('click',storySkip);
+document.getElementById('shop-btn').addEventListener('click',openShop);
+document.getElementById('cs-shop-btn').addEventListener('click',openShop);
 
 window.addEventListener('resize',()=>{
   if(tbCanvas){ tbCanvas.width=window.innerWidth; tbCanvas.height=window.innerHeight; }
 });
 
 window.addEventListener('load',()=>{
+  loadProgress();
   setScreen('title');
   initTitleBg();
 });
