@@ -693,6 +693,660 @@ function animTitleBg() {
   requestAnimationFrame(animTitleBg);
 }
 
+// ═══════════════════════════════════════════════════
+//  PIXEL ART SPRITE SYSTEM
+// ═══════════════════════════════════════════════════
+const PAL={
+  ' ':null,'k':'#0a0a0a','K':'#1a1820',
+  'n':'#e8c8a0','N':'#c8a070',
+  'd':'#0d0d22','D':'#1a1a3a',
+  'p':'#ff7799','P':'#ee2255',
+  'w':'#eeeeff','W':'#aaaadd',
+  'B':'#111133','b':'#223388',
+  'G':'#553377','g':'#7733aa',
+  'R':'#cc1100','r':'#ff3322',
+  'O':'#cc5500','o':'#ff8800',
+  'y':'#ffcc00','Y':'#ffee66',
+  'e':'#0a0a0a','E':'#f0f0f0',
+  'h':'#aa6622','H':'#dd9933',
+  'T':'#ddaa22','t':'#775511',
+  'C':'#002299','c':'#0099cc',
+  'x':'#ff66ff','v':'#442255','V':'#7733aa',
+  'm':'#885544','M':'#ff1133',
+  'S':'#cc9988','q':'#ff1133','Q':'#220011',
+  'F':'#ff4400','f':'#ff9900','L':'#550000',
+  'I':'#ffffff','u':'#00ccdd','Z':'#000820',
+  'a':'#ffaacc','X':'#ff0000','z':'#0a1428',
+};
+
+// 16×32 sprites. Each frame = array of 32 strings of 16 chars.
+// Characters face RIGHT. Flip horizontally for enemies.
+const SPR={
+yuji:[
+[// idle
+'   pPpPpPpPp    ',
+'  pPPPPPPPPPp   ',
+' pPPPPPPPPPPPp  ',
+' PPPnnnnnnnnPP  ',
+' PPnnnnnnnnnnPP ',
+' PPnnEenEennPP  ',
+' PPnnnnnnnnnnPP ',
+' PPnnnmmmnnPP   ',
+'  PPnnnnnnPPP   ',
+'   kknnnnkk     ',
+'  kDDDDDDDDDk   ',
+'DDDDDDDdDdDDDDDD',
+'DDDDDDDDDDDDkDDD',
+' kDDDDDDDDDDk   ',
+'  DDkkkkkkkDD   ',
+'  DDDDDDDDDDD   ',
+'  DDDDDDDDDDD   ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+' kDDk     kDDk  ',
+' kkkk     kkkk  ',
+],
+[// attack — right arm punching
+'   pPpPpPpPp    ',
+'  pPPPPPPPPPp   ',
+' pPPPPPPPPPPPp  ',
+' PPPnnnnnnnnPP  ',
+' PPnnnnnnnnnnPP ',
+' PPnnEenEennPP  ',
+' PPnnnnnnnnnnPP ',
+' PPnnnmmmnnPP   ',
+'  PPnnnnnnPPP   ',
+'   kknnnnkk     ',
+'  kDDDDDDDDDk   ',
+'DDDDDDDdDdDDDDDD',
+'  DDDDDDDDDDDDnn',
+'  kDDDDDDDDDDnn ',
+'   DDkkkkkkkDD  ',
+'   DDDDDDDDDDD  ',
+'   DDDDDDDDDDD  ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+' kDDk     kDDk  ',
+' kkkk     kkkk  ',
+]],
+megumi:[
+[// idle
+'  BBBBBBBBBBBb  ',
+' BBBBBBBBBBBBb  ',
+' BBBBBBBBBBBBBb ',
+' BBBnnnnnnnnBBB ',
+' BBnnnnnnnnnnBB ',
+' BBnnEenEennBBB ',
+' BBnnnnnnnnnnBB ',
+' BBnnnnnnnnBBB  ',
+'  BBnnnnnnBBBB  ',
+'   kknnnnkk     ',
+'  kDDDDDDDDDk   ',
+'kDDDDDDDDDDDDDkD',
+'DDDDDDbDbDDDDDDD',
+' kDDDDDDDDDDDk  ',
+'  DDkkkkkkkDD   ',
+'  DDDDDDDDDDD   ',
+'  DDDDDDDDDDD   ',
+'  ZZzzzzzzZZ    ',
+'  ZZzzuuuuZZ    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+' kDDk     kDDk  ',
+' kkkk     kkkk  ',
+],
+[// attack — summoning arms raised
+'  BBBBBBBBBBBb  ',
+' BBBBBBBBBBBBb  ',
+' BBBBBBBBBBBBBb ',
+' BBBnnnnnnnnBBB ',
+' BBnnnnnnnnnnBB ',
+' BBnnEenEennBBB ',
+' BBnnnnnnnnnnBB ',
+' BBnnnnnnnnBBB  ',
+'  BBnnnnnnBBBB  ',
+'   kknnnnkk     ',
+'  kDDDDDDDDDk   ',
+'nDDDDDDDDDDDDDnD',
+'DDDDDDbDbDDDDDDD',
+'uDDDDDDDDDDDDDu ',
+'  DDkkkkkkkDD   ',
+'  DDDDDDDDDDD   ',
+'  DDDDDDDDDDD   ',
+'  ZZzzuuuuZZ    ',
+'  ZZuuuuuuZZ    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+' kDDk     kDDk  ',
+' kkkk     kkkk  ',
+]],
+nobara:[
+[// idle
+' hHhhHHHHhhhH   ',
+' hHHHHHHHHHHHh  ',
+' hHHHnnnnnnHHHh ',
+'  HHnnnnnnnnHH  ',
+'  HHnnEenEennHH ',
+'  HHnnnnnnnnHHH ',
+'  HHnnnmmmnnHH  ',
+'   HHnnnnnnHHH  ',
+'    kknnnnkk    ',
+'   kDDDDDDDDk   ',
+'kDDDDDDDDDDDtDkk',
+'DDDDDDdDdDDDtDDD',
+'DDDDDDDDDDDTTDDk',
+' kDDDDDDDDDTk   ',
+'  DDkkkkkkkDD   ',
+'  DDDDDDDDDDD   ',
+'  DDDDDDDDDDD   ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+' kDDk     kDDk  ',
+' kkkk     kkkk  ',
+],
+[// attack — hammer raised
+'     TT         ',
+'    TTtT        ',
+'    tttT        ',
+' hHhhHHHHhhhH   ',
+' hHHHnnnnnnHHHh ',
+'  HHnnEenEennHH ',
+'  HHnnnnnnnnHHH ',
+'  HHnnnmmmnnHH  ',
+'   HHnnnnnnHHH  ',
+'    kknnnnkk    ',
+'   kDDDDDDDDk   ',
+'kDDDDDDDDDDDtDkk',
+'DDDDDDdDdDDDtDDD',
+'DDDDDDDDDDDTTkDk',
+' kDDDDDDDDDTk   ',
+'  DDkkkkkkkDD   ',
+'  DDDDDDDDDDD   ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+' kDDk     kDDk  ',
+' kkkk     kkkk  ',
+]],
+gojo:[
+[// idle
+' wWwWWWWWWWWwW  ',
+'wWWWWWWWWWWWWWw ',
+'wWWWWWWWWWWWWWw ',
+' WWWnnnnnnnnWWW ',
+' WWCCCCCCCCCCcW ',
+' WWCCccCcccCCWW ',
+' WWWnnnnnnnnWWW ',
+'  WWnnnmmmnnWW  ',
+'   WWnnnnnnWW   ',
+'    kknnnnkk    ',
+'   kDDDDDDDDk   ',
+'kDDDDDDDDDDDDDkk',
+'DDDDDDDIDIDDDDkD',
+' kDDDDDDDDDDDk  ',
+'  DDkkkkkkkDD   ',
+'  DDDDDDDDDDD   ',
+'  DDDDDDDDDDD   ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+' kDDk     kDDk  ',
+' kkkk     kkkk  ',
+],
+[// attack — hand extended (infinity)
+' wWwWWWWWWWWwW  ',
+'wWWWWWWWWWWWWWw ',
+'wWWWWWWWWWWWWWw ',
+' WWWnnnnnnnnWWW ',
+' WWCCCCCCCCCCcW ',
+' WWCCccCcccCCWW ',
+' WWWnnnnnnnnWWW ',
+'  WWnnnmmmnnWW  ',
+'   WWnnnnnnWW   ',
+'    kknnnnkk    ',
+'   kDDDDDDDDk   ',
+'kDDDDDDDDDDDDDkk',
+'DDDDDDDIDIDDkDnn',
+' kDDDDDDDDDDDnn ',
+'  DDkkkkkkkDDn  ',
+'  DDDDDDDDDDD   ',
+'  DDDDDDDDDDD   ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+'   DD     DD    ',
+' kDDk     kDDk  ',
+' kkkk     kkkk  ',
+]],
+sukuna:[
+[// idle
+'   pPpPpPpPp    ',
+'  pPPPPPPPPPp   ',
+' pPPSSSSSSSSPPp ',
+' PPPSSSSSSSSqPP ',
+' PPSSMSSSMSSqPP ',
+' PPSSEeSEeSSSPP ',
+' PPSSMSSSMSSqPP ',
+' PPSSSmmmSqPPP  ',
+'  PPSSSSSSqPP   ',
+'   kkSSSSSkk    ',
+'  kQQQQQQQQk    ',
+'QQQQQQQqQqQQQQQQ',
+'QQQQQQQQQQQQQQrQ',
+'rQrQQQQQQQQQQqrQ',
+' kQQkkkkkkkQQk  ',
+'  QQQQQQQQQQQQ  ',
+'  QQQQQQQQQQQQ  ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+' kQQk     kQQk  ',
+' kkkk     kkkk  ',
+],
+[// attack — cleave
+'   pPpPpPpPp    ',
+'  pPPPPPPPPPp   ',
+' pPPSSSSSSSSPPp ',
+' PPPSSSSSSSSqPP ',
+' PPSSMSSSMSSqPP ',
+' PPSSEeSEeSSSPP ',
+' PPSSMSSSMSSqPP ',
+' PPSSSmmmSqPPP  ',
+'  PPSSSSSSqPP   ',
+'   kkSSSSSkk    ',
+'  kQQQQQQQQk    ',
+'QQQQQQQqQqQQQQQQ',
+' QQQQQQQQQQQQQnn',
+' rQrQQQQQQQQQqnn',
+'  kQQkkkkkkkQQn  ',
+'  QQQQQQQQQQQQ  ',
+'  QQQQQQQQQQQQ  ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+'  QQ       QQ   ',
+' kQQk     kQQk  ',
+' kkkk     kkkk  ',
+]],
+mahito:[
+[// idle
+'  vVxVVVVxVVv   ',
+' vVVVxVVxVVVVv  ',
+' VVVxVVVVVVxVV  ',
+' VVxVVVVVVVxVVV ',
+' VVVVVVVVVVVVVv ',
+' VVVVyYVVyYVVV  ',
+' VVVVVVVVVVVVVv ',
+' VVVVxVVxVVVVV  ',
+'  VVxVVVVVxVV   ',
+'   kkVVVVkk     ',
+'  kGGGGGGGGk    ',
+'kGGGGxGGGxGGGGkG',
+'GGGGGGGGGGGGGxGG',
+' kGGGGGGGGGGGk  ',
+'  GGkkkkkkkGG   ',
+'  GGGGGGGGGGG   ',
+'  GGGGGGGGGGG   ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+' kGGk     kGGk  ',
+' kkkk     kkkk  ',
+],
+[// attack — transfigured arm
+'  vVxVVVVxVVv   ',
+' vVVVxVVxVVVVv  ',
+' VVVxVVVVVVxVV  ',
+' VVxVVVVVVVxVVV ',
+' VVVVVVVVVVVVVv ',
+' VVVVyYVVyYVVV  ',
+' VVVVVVVVVVVVVv ',
+' VVVVxVVxVVVVV  ',
+'  VVxVVVVVxVV   ',
+'   kkVVVVkk     ',
+'  kGGGGGGGGk    ',
+'kGGGGxGGGxGGGGkG',
+'GGGGGGGGGGGGGGggg',
+' kGGGGGGGGGGGggg',
+'  GGkkkkkkkGGgg ',
+'  GGGGGGGGGGG   ',
+'  GGGGGGGGGGG   ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+'   GG     GG    ',
+' kGGk     kGGk  ',
+' kkkk     kkkk  ',
+]],
+jogo:[
+[// idle
+'     RFFFFF     ',
+'     RFFFRR     ',
+'    RRLLLRRRR   ',
+'   RRLLLLLLLRR  ',
+'   RLLLLyYLLLR  ',
+'   RLLLLyYLLLR  ',
+'   RLLLLLLLLLL  ',
+'   LLLLmLLLLLL  ',
+'    kLLLLLLkk   ',
+'   kLLLLLLLLk   ',
+'  kLLLLLLLLLLk  ',
+'RRLLLLLLLLLLLLkR',
+'RRRLLLrLrLLLFLRR',
+'RRRRLLLLLLLFfLRR',
+' RRkLLLLLLLkRR  ',
+'   LLkkkkkLL    ',
+'   LLLLLLLLL    ',
+'   LLLLLLLLL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+' kLLk     kLLk  ',
+' kkkk     kkkk  ',
+],
+[// attack — lava fist
+'     RFFFFF     ',
+'     RFFFRR     ',
+'    RRLLLRRRR   ',
+'   RRLLLLLLLRR  ',
+'   RLLLLyYLLLR  ',
+'   RLLLLyYLLLR  ',
+'   RLLLLLLLLLL  ',
+'   LLLLmLLLLLL  ',
+'    kLLLLLLkk   ',
+'   kLLLLLLLLk   ',
+'  kLLLLLLLLLLk  ',
+'RRLLLLLLLLLLLLkR',
+'RRRLLLrLrLLLFFFF',
+'RRRRLLLLLLLFffff',
+' RRkLLLLLLLkFff ',
+'   LLkkkkkLL    ',
+'   LLLLLLLLL    ',
+'   LLLLLLLLL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+'   LL     LL    ',
+' kLLk     kLLk  ',
+' kkkk     kkkk  ',
+]]};
+
+// Divine Dog sprite (12×9, 2 run frames)
+const DOG_PAL={' ':null,'k':'#0a0a0a','K':'#222233','e':'#00ccdd','E':'#aaddff','w':'#333355','t':'#ffffff'};
+const DOG_SPR=[
+[// frame 0
+'   kkkkkk   ',
+' kkKKKKKKkk ',
+' kKKKKeKKKk ',
+' kKKKKKKKKk ',
+'kkKKKKKKKKkk',
+'kKKKKKKKKKKk',
+' kKk kk kKk ',
+'  k   k  k  ',
+'            ',
+],
+[// frame 1 — run cycle
+'   kkkkkk   ',
+' kkKKKKKKkk ',
+' kKKKKeKKKk ',
+' kKKKKKKKKk ',
+'kkKKKKKKKKkk',
+'kKKKKKKKKKKk',
+'  kk kk kk  ',
+' k    k   k ',
+'            ',
+]];
+
+// Nail sprite (Nobara attack projectile) 5×10
+const NAIL_SPR=[
+['  k  ','  k  ','  k  ','  k  ','  k  ','  k  ','  k  ','  k  ',' kkk ','kkkkk']
+];
+const NAIL_PAL={' ':null,'k':'#ffdd44'};
+
+// Animation frame state
+let spriteFrame=0, spriteTimer=0;
+const SPRITE_FPS=8; // how many game-frames per sprite frame
+let dogAnim={active:false,x:0,y:0,tx:0,ty:0,t:0,maxT:30,frame:0,frameTimer:0,flip:false};
+
+function drawPixelChar(ctx, id, frameIdx, cx, cy, scale=4, flip=false) {
+  const frames = SPR[id];
+  if(!frames) return;
+  const frame = frames[Math.min(frameIdx, frames.length-1)];
+  const sh = frame.length;
+  const sw = frame[0].length;
+  ctx.save();
+  if(flip){
+    ctx.translate(cx*2, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.imageSmoothingEnabled=false;
+  for(let row=0;row<sh;row++){
+    for(let col=0;col<sw;col++){
+      const ch=frame[row][col];
+      const color=PAL[ch];
+      if(!color) continue;
+      ctx.fillStyle=color;
+      ctx.fillRect(cx + (col - sw/2)*scale, cy - sh*scale + row*scale, scale, scale);
+    }
+  }
+  ctx.restore();
+}
+
+function drawDog(ctx, x, y, scale=5, flip=false, frameIdx=0) {
+  const frame = DOG_SPR[frameIdx % DOG_SPR.length];
+  const sh=frame.length, sw=frame[0].length;
+  ctx.save();
+  if(flip){ ctx.translate(x*2,0); ctx.scale(-1,1); }
+  ctx.imageSmoothingEnabled=false;
+  for(let row=0;row<sh;row++){
+    for(let col=0;col<sw;col++){
+      const ch=frame[row][col];
+      const color=DOG_PAL[ch];
+      if(!color) continue;
+      ctx.fillStyle=color;
+      ctx.fillRect(x+(col-sw/2)*scale, y-sh*scale+row*scale, scale, scale);
+    }
+  }
+  ctx.restore();
+}
+
+function drawNails(ctx, x, y, scale=3) {
+  const frame=NAIL_SPR[0], sh=frame.length, sw=frame[0].length;
+  for(let row=0;row<sh;row++)
+    for(let col=0;col<sw;col++){
+      const color=NAIL_PAL[frame[row][col]];
+      if(!color) continue;
+      ctx.fillStyle=color;
+      ctx.fillRect(x+(col-sw/2)*scale, y-sh*scale+row*scale, scale, scale);
+    }
+}
+
+// Gojo unlimited void domain — special full-canvas effect
+function drawGojoVoid(ctx, w, h, t) {
+  // t = 0..1 progress
+  const alpha = t<0.12 ? t/0.12 : t>0.88 ? (1-t)/0.12 : 1;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  // Deep space background
+  ctx.fillStyle='#000005'; ctx.fillRect(0,0,w,h);
+  // Stars
+  ctx.fillStyle='#ffffff';
+  for(let i=0;i<120;i++){
+    const sx=(i*137.5)%w, sy=(i*97.3)%h;
+    const blink=0.5+0.5*Math.sin(t*Math.PI*6+i);
+    ctx.globalAlpha=alpha*blink*0.8;
+    ctx.fillRect(sx,sy,i%3===0?2:1,i%3===0?2:1);
+  }
+  ctx.globalAlpha=alpha;
+  // Geometric void lines radiating from center
+  const cx=w/2, cy=h/2;
+  for(let i=0;i<16;i++){
+    const ang=i/16*Math.PI*2 + t*0.3;
+    const len=(t<0.5?t*2:1)*Math.max(w,h);
+    const g=ctx.createLinearGradient(cx,cy,cx+Math.cos(ang)*len,cy+Math.sin(ang)*len);
+    g.addColorStop(0,'#00ccff88'); g.addColorStop(0.4,'#0044ff44'); g.addColorStop(1,'transparent');
+    ctx.strokeStyle=g; ctx.lineWidth=1.5; ctx.globalAlpha=alpha*0.5;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(ang)*len,cy+Math.sin(ang)*len); ctx.stroke();
+  }
+  // Concentric infinity rings
+  for(let ring=1;ring<=5;ring++){
+    const r=ring*40*(0.5+t*0.6);
+    ctx.strokeStyle='#00ccff'; ctx.lineWidth=1; ctx.globalAlpha=alpha*(1-ring/6)*0.6;
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+  }
+  // Central ∞ symbol
+  ctx.globalAlpha=alpha*Math.sin(t*Math.PI)*0.95;
+  ctx.fillStyle='#00ccff';
+  ctx.shadowColor='#00ccff'; ctx.shadowBlur=40;
+  ctx.font=`bold ${Math.floor(80+t*40)}px serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('∞', cx, cy);
+  // Domain text
+  if(t>0.25&&t<0.85){
+    ctx.globalAlpha=alpha*0.9; ctx.shadowBlur=20;
+    ctx.font='bold 20px monospace'; ctx.fillStyle='#aaeeff';
+    ctx.fillText('UNLIMITED VOID', cx, cy+70);
+    ctx.font='16px monospace'; ctx.fillStyle='#4488cc';
+    ctx.fillText('無量空処', cx, cy+96);
+  }
+  ctx.restore();
+}
+
 // ---- Draw functions ----
 function drawBg(ctx, w, h) {
   const bg = ctx.createLinearGradient(0,0,0,h);
@@ -1281,6 +1935,20 @@ function drawHumanoid(ctx, x, y, color, glow, type, idleY=0, flip=false) {
   ctx.restore();
 }
 
+// Pixel aura glow around sprite
+function drawPixelAura(ctx, x, y, color, scale=4, sw=16, sh=32, intensity=1) {
+  ctx.save();
+  const grd=ctx.createRadialGradient(x,y-sh*scale/2,4,x,y-sh*scale/2,sw*scale*0.7);
+  grd.addColorStop(0,color+'44'); grd.addColorStop(1,'transparent');
+  ctx.globalAlpha=intensity;
+  ctx.fillStyle=grd; ctx.beginPath(); ctx.ellipse(x,y-sh*scale/2,sw*scale*0.7,sh*scale*0.55,0,0,Math.PI*2); ctx.fill();
+  // pulsing ring
+  const pulse=0.5+0.5*Math.sin(Date.now()*0.003);
+  ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.globalAlpha=intensity*pulse*0.35;
+  ctx.beginPath(); ctx.ellipse(x,y-sh*scale/2,sw*scale*0.75+pulse*4,sh*scale*0.58+pulse*3,0,0,Math.PI*2); ctx.stroke();
+  ctx.restore();
+}
+
 // ── Floating damage numbers ──
 function spawnFloatNum(x, y, text, color, big=false) {
   floatNums.push({ x, y, text, color, big, vy:-2.2, life:55, maxLife:55 });
@@ -1610,12 +2278,19 @@ function triggerFlash(c='#fff',a=0.5){flashColor=c;flashAlpha=a;}
 let pHitF=0, eHitF=0;
 
 // Attack lean: positive = lean right (toward enemy)
-function playerAttack(lean=22){pLean=lean; setTimeout(()=>pLean=0,320);}
-function enemyAttack(lean=-22){eLean=lean; setTimeout(()=>eLean=0,320);}
-function playerHit(){pHitF=12; pHitScale=0.88; setTimeout(()=>pHitScale=1,200);}
-function enemyHit(){eHitF=12; eHitScale=0.88; setTimeout(()=>eHitScale=1,200);}
+function playerAttack(lean=22){
+  pLean=lean; pAttackFrame=1;
+  setTimeout(()=>{ pLean=0; pAttackFrame=0; },400);
+}
+function enemyAttack(lean=-22){
+  eLean=lean; eAttackFrame=1;
+  setTimeout(()=>{ eLean=0; eAttackFrame=0; },400);
+}
+function playerHit(){pHitF=12; pHitScale=0.85; setTimeout(()=>pHitScale=1,200);}
+function enemyHit(){eHitF=12; eHitScale=0.85; setTimeout(()=>eHitScale=1,200);}
 
 // ---- Main render loop ----
+let pAttackFrame=0, eAttackFrame=0; // 0=idle, 1=attack
 function renderBattle(){
   if(GS.screen!=='battle')return;
   if(!bCanvas)return;
@@ -1625,64 +2300,92 @@ function renderBattle(){
   shakeX*=0.82; shakeY*=0.82;
   if(Math.abs(shakeX)<0.1)shakeX=0;
 
+  // Sprite animation tick
+  spriteTimer++;
+  if(spriteTimer>=SPRITE_FPS){ spriteTimer=0; spriteFrame=(spriteFrame+1)%2; }
+
   bCtx.save();
   bCtx.translate(sx,sy);
-  drawBg(bCtx,w,h);
+
+  // Check for Gojo void domain animation
+  const voidAnim=anims.find(a=>a.type==='void');
+  if(voidAnim){ const t=1-voidAnim.life/voidAnim.maxLife; drawGojoVoid(bCtx,w,h,t); }
+  else drawBg(bCtx,w,h);
 
   idleT+=0.028;
-  const idleY   = Math.sin(idleT)*4;
-  const idleYE  = Math.sin(idleT*0.9+1)*3.5;
-  // breathing: subtle X sway
-  const sway  = Math.sin(idleT*0.6)*1.5;
-  const swayE = Math.sin(idleT*0.55+2)*1.5;
+  const idleY  = Math.sin(idleT)*3;
+  const idleYE = Math.sin(idleT*0.9+1)*3;
+  const PSCALE = 5, ESCALE = 5; // pixel scale for battle sprites
 
-  // ambient cursed energy particles
-  if(Math.random()<0.28) spawnCurseP(195+(Math.random()-0.5)*30, 230+(Math.random()-0.5)*60, 1);
-  if(Math.random()<0.28) spawnCurseP(582+(Math.random()-0.5)*30, 230+(Math.random()-0.5)*60, 1);
-  if(GS.enemy&&GS.enemy.id==='jogo'&&Math.random()<0.4) spawnFireP(582+(Math.random()-0.5)*50,220+(Math.random()-0.5)*70,1);
-  // Sukuna blooddrops
-  if(GS.enemy&&GS.enemy.id==='sukuna'&&Math.random()<0.15) spawnP(582+(Math.random()-0.5)*40,210,1,'#ff0022',1,60);
+  // ambient particles
+  if(Math.random()<0.22) spawnCurseP(195+(Math.random()-0.5)*20,230+(Math.random()-0.5)*50,1);
+  if(Math.random()<0.22) spawnCurseP(582+(Math.random()-0.5)*20,230+(Math.random()-0.5)*50,1);
+  if(GS.enemy?.id==='jogo'&&Math.random()<0.4) spawnFireP(582+(Math.random()-0.5)*40,220,1);
+  if(GS.enemy?.id==='sukuna'&&Math.random()<0.12) spawnP(582,210,1,'#ff0022',1.5,55);
 
   // ── Draw player ──
   if(GS.player){
+    const px=195+pLean, py=258+idleY;
+    const sc=pHitScale;
     bCtx.save();
-    const px = 195 + pLean + sway;
-    const py = 258;
-    const sc = pHitScale < 1 ? pHitScale : 1;
-    bCtx.translate(px, py); bCtx.scale(sc, 2-sc); bCtx.translate(-px,-py);
+    bCtx.translate(px,py); bCtx.scale(sc,sc); bCtx.translate(-px,-py);
+    drawPixelAura(bCtx,px,py,GS.player.color,PSCALE);
     if(pHitF>0){
-      // white silhouette flash
-      bCtx.save(); bCtx.globalAlpha=pHitF/13;
-      bCtx.filter=`brightness(10)`;
-      drawHumanoid(bCtx,px,py,GS.player.color,GS.player.glow,GS.player.id,idleY,false);
+      bCtx.save(); bCtx.globalAlpha=pHitF/14;
+      bCtx.filter='brightness(12) saturate(0)';
+      drawPixelChar(bCtx,GS.player.id,pAttackFrame,px,py,PSCALE,false);
       bCtx.filter='none'; bCtx.restore();
       pHitF--;
     }
-    drawHumanoid(bCtx,px,py,GS.player.color,GS.player.glow,GS.player.id,idleY,false);
+    drawPixelChar(bCtx,GS.player.id,pAttackFrame,px,py,PSCALE,false);
+    // name tag
+    bCtx.fillStyle=GS.player.color; bCtx.font='bold 10px monospace';
+    bCtx.textAlign='center'; bCtx.shadowColor=GS.player.color; bCtx.shadowBlur=8;
+    bCtx.fillText(GS.player.name, px, py+12);
     bCtx.restore();
   }
 
   // ── Draw enemy ──
   if(GS.enemy){
+    const ex=582+eLean, ey=258+idleYE;
+    const sc=eHitScale;
     bCtx.save();
-    const ex = 582 + eLean + swayE;
-    const ey = 258;
-    const sc = eHitScale < 1 ? eHitScale : 1;
-    bCtx.translate(ex, ey); bCtx.scale(sc, 2-sc); bCtx.translate(-ex,-ey);
+    bCtx.translate(ex,ey); bCtx.scale(sc,sc); bCtx.translate(-ex,-ey);
+    drawPixelAura(bCtx,ex,ey,GS.enemy.color,ESCALE);
     if(eHitF>0){
-      bCtx.save(); bCtx.globalAlpha=eHitF/13;
-      bCtx.filter=`brightness(10)`;
-      drawHumanoid(bCtx,ex,ey,GS.enemy.color,GS.enemy.glow,GS.enemy.id,idleYE,true);
+      bCtx.save(); bCtx.globalAlpha=eHitF/14;
+      bCtx.filter='brightness(12) saturate(0)';
+      drawPixelChar(bCtx,GS.enemy.id,eAttackFrame,ex,ey,ESCALE,true);
       bCtx.filter='none'; bCtx.restore();
       eHitF--;
     }
-    drawHumanoid(bCtx,ex,ey,GS.enemy.color,GS.enemy.glow,GS.enemy.id,idleYE,true);
+    drawPixelChar(bCtx,GS.enemy.id,eAttackFrame,ex,ey,ESCALE,true);
+    bCtx.fillStyle=GS.enemy.color; bCtx.font='bold 10px monospace';
+    bCtx.textAlign='center'; bCtx.shadowColor=GS.enemy.color; bCtx.shadowBlur=8;
+    bCtx.fillText(GS.enemy.name, ex, ey+12);
     bCtx.restore();
   }
 
-  // smooth lean decay
-  pLean *= 0.85; eLean *= 0.85;
-  pHitScale += (1-pHitScale)*0.2; eHitScale += (1-eHitScale)*0.2;
+  // ── Running dog animation ──
+  if(dogAnim.active){
+    dogAnim.t++;
+    dogAnim.frameTimer++;
+    if(dogAnim.frameTimer>=4){ dogAnim.frameTimer=0; dogAnim.frame=(dogAnim.frame+1)%2; }
+    const tp=dogAnim.t/dogAnim.maxT;
+    const dx=dogAnim.x+(dogAnim.tx-dogAnim.x)*tp;
+    const dy=dogAnim.y+(dogAnim.ty-dogAnim.y)*tp;
+    drawDog(bCtx, dx, dy, 5, dogAnim.flip, dogAnim.frame);
+    // Cyan glow trail
+    bCtx.save(); bCtx.globalAlpha=0.4; bCtx.fillStyle='#00ccdd';
+    bCtx.shadowColor='#00ccdd'; bCtx.shadowBlur=15;
+    bCtx.beginPath(); bCtx.ellipse(dx,dy+4,22,8,0,0,Math.PI*2); bCtx.fill();
+    bCtx.restore();
+    if(dogAnim.t>=dogAnim.maxT) dogAnim.active=false;
+  }
+
+  // lean / scale decay
+  pLean*=0.82; eLean*=0.82;
+  pHitScale+=(1-pHitScale)*0.22; eHitScale+=(1-eHitScale)*0.22;
 
   updateP(); drawP(bCtx);
   updateA(); drawA(bCtx,w,h);
@@ -1695,14 +2398,20 @@ function renderBattle(){
 // ============================================================
 function renderCardCanvas(canvas, char){
   const ctx=canvas.getContext('2d');
-  const w=canvas.width,h=canvas.height;
-  ctx.fillStyle='#080015';ctx.fillRect(0,0,w,h);
-  const g=ctx.createRadialGradient(w/2,h/2,5,w/2,h/2,75);
-  g.addColorStop(0,char.color+'1e');g.addColorStop(1,'transparent');
-  ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle=char.color+'44';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(12,h-22);ctx.lineTo(w-12,h-22);ctx.stroke();
-  drawHumanoid(ctx,w/2,h-16,char.color,char.glow,char.id,0,false);
+  const w=canvas.width, h=canvas.height;
+  ctx.fillStyle='#080015'; ctx.fillRect(0,0,w,h);
+  // Gradient bg
+  const g=ctx.createRadialGradient(w/2,h*0.6,4,w/2,h*0.6,70);
+  g.addColorStop(0,char.color+'28'); g.addColorStop(1,'transparent');
+  ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+  // Bottom line
+  ctx.strokeStyle=char.color+'55'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(8,h-18); ctx.lineTo(w-8,h-18); ctx.stroke();
+  // Pixel sprite — scale 3 to fit 120×150 canvas for 16×32 sprite
+  const scale=3;
+  ctx.imageSmoothingEnabled=false;
+  drawPixelAura(ctx,w/2,h-14,char.color,scale);
+  drawPixelChar(ctx,char.id,0,w/2,h-14,scale,false);
 }
 
 // ============================================================
@@ -2161,32 +2870,33 @@ function execPlayerMove(key,move,cb){
       },380);
 
     } else if(p.id==='megumi'){
-      addAnim('charge',{x:388,y:ey-30,maxR:70,color:'#4488ff',dur:30});
-      spawnSpiralP(388,ey-30,22,'#4488ff');
+      addAnim('charge',{x:px+35,y:py-55,maxR:80,color:'#4488ff',dur:35});
+      spawnSpiralP(px,py-55,25,'#4488ff');
+      logMsg('十種影法術！ Ten Shadows Technique!','lu');
       setTimeout(()=>{
-        addAnim('domain',{kanji:'魔',name:'SUMMON: MAHORAGA',dur:80,color:'#4488ff'});
-        triggerFlash('#2266ff',0.55);
-        // Mahoraga is summoned — it adapts (gain 2 adaptation stacks)
-        GS.mahoragaActive=true;
-        ['physical','cursed','soul','fire','slash'].forEach((tp,i)=>{ if(i<2) GS.mahoragaAdapted[tp]=(GS.mahoragaAdapted[tp]||0)+1; });
-        logMsg('Mahoraga is summoned and gains 2 adaptation stacks!','lu');
+        // Shadow pool forms
+        spawnCurseP(px,py-10,30); spawnSpiralP(px,py-5,20,'#001133');
+        triggerFlash('#2266ff',0.35);
         setTimeout(()=>{
-          addAnim('summon',{x:388,y:ey-22,color:'#4488ff',dur:36});
+          // Divine Dog: Totality emerges and runs!
+          dogAnim={active:true,x:px,y:py-20,tx:ex,ty:ey-30,t:0,maxT:35,frame:0,frameTimer:0,flip:false};
+          logMsg('Divine Dog: Totality — charging!','lu');
           setTimeout(()=>{
-            addAnim('proj',{sx:410,sy:ey-22,tx:ex-22,ty:ey-42,color:'#4488ff',size:24,dur:20});
-            setTimeout(()=>{
-              addAnim('explode',{x:ex,y:ey-42,maxR:130,color:'#4488ff',dur:48});
-              spawnCurseP(ex,ey-42,75);
-              for(let i=0;i<8;i++) spawnP(ex+(Math.random()-0.5)*120,ey+(Math.random()-0.5)*110,5,'#88aaff',6,65);
-              triggerShake(17); triggerFlash('#2266ff',0.6);
-              const dmg=calcDmg(move.dmg,p.atk,e.def,isCrit());
-              applyEDmg(dmg);
-              logMsg('Mahoraga cleaves with the World-Slashing Wheel — '+dmg+' DAMAGE!','lu');
-              updateBars(); setTimeout(cb,600);
-            },340);
-          },450);
-        },450);
-      },350);
+            // Dog hits enemy
+            addAnim('explode',{x:ex,y:ey-42,maxR:120,color:'#00ccdd',dur:48});
+            spawnCurseP(ex,ey-42,65);
+            for(let i=0;i<6;i++) spawnP(ex+(Math.random()-0.5)*100,ey+(Math.random()-0.5)*100,5,'#00ccdd',5,60);
+            triggerShake(16); triggerFlash('#00ccff',0.55);
+            // Mahoraga adaptation bonus
+            GS.mahoragaActive=true;
+            ['shadow','physical'].forEach(tp=>{ GS.mahoragaAdapted[tp]=(GS.mahoragaAdapted[tp]||0)+1; });
+            const dmg=calcDmg(move.dmg,p.atk,e.def,isCrit());
+            applyEDmg(dmg);
+            logMsg('Divine Dog tears apart — '+dmg+' DAMAGE! Mahoraga gains 2 stacks!','lu');
+            updateBars(); setTimeout(cb,700);
+          },700);
+        },400);
+      },380);
 
     } else if(p.id==='nobara'){
       addAnim('charge',{x:px+40,y:py-55,maxR:65,color:'#ff9900',dur:30});
@@ -2596,9 +3306,9 @@ function drawStoryPortrait(){
   const ctx=cv.getContext('2d');
   drawBg(ctx,cv.width,cv.height);
   // player on left, current chapter enemy on right
-  drawHumanoid(ctx,150,cv.height-20,GS.player.color,GS.player.glow,GS.player.id,0,false);
+  drawPixelChar(ctx,GS.player?.id||'yuji',0,150,cv.height-20,4,false);
   const en=ENEMIES[STORY[storyState.chapter].enemyIdx];
-  drawHumanoid(ctx,cv.width-150,cv.height-20,en.color,en.glow,en.id,0,true);
+  drawPixelChar(ctx,en.id,0,cv.width-150,cv.height-20,4,true);
 }
 
 function renderStoryLine(){
@@ -2711,7 +3421,8 @@ function renderTraining(){
   idleT+=0.028;
   const idleY=Math.sin(idleT)*4;
   // player
-  drawHumanoid(ctx,180,h-72,GS.player.color,GS.player.glow,GS.player.id,idleY,false);
+  drawPixelAura(ctx,180,h-72,GS.player?.color||'#8b5cf6',5);
+  drawPixelChar(ctx,GS.player?.id||'yuji',0,180,h-72,5,false);
   // training dummy
   drawDummy(ctx,580,h-72);
   // dummy HP
