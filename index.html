@@ -499,6 +499,9 @@ body {
           ★ ULTIMATE<span class="mcost" id="ult-cost">50 CE</span>
         </button>
       </div>
+      <button class="mbtn mbtn-s1" id="btn-fuga" onclick="doFugaCounter()" style="display:none;width:100%;margin-top:6px;">
+        ★ Fuga Counter<span class="mcost">風雅</span>
+      </button>
       <div class="turn-ind" id="turn-ind">YOUR TURN ⚡</div>
     </div>
     <div class="log-panel">
@@ -798,6 +801,8 @@ const GS = {
   playerTurn: true,
   battleActive: false,
   animating: false,
+  fugazable: false,
+  enemyLastMove: null,
   stats: {dmg:0, moves:0, turns:0, killed:0},
 
   // status arrays  [{type,turns,...}]
@@ -1839,6 +1844,63 @@ function getSkinPalette(id){
   const skin=SKINS.find(s=>s.id===skinId&&s.charId===id);
   if(!skin) return PAL;
   return Object.assign({}, PAL, skin.palOverride);
+}
+
+// ============================================================
+//  REAL CHARACTER IMAGES (with pixel-art fallback)
+// ============================================================
+const CHAR_IMGS = {};
+const CHAR_IMG_URLS = {
+  yuji:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/9/9b/Yuji_Itadori_anime_design_main.png/300px-Yuji_Itadori_anime_design_main.png',
+  megumi:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/8/87/Megumi_Fushiguro_anime_design_main.png/300px-Megumi_Fushiguro_anime_design_main.png',
+  nobara:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/a/ab/Nobara_Kugisaki_anime_design_main.png/300px-Nobara_Kugisaki_anime_design_main.png',
+  gojo:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/f/f5/Satoru_Gojo_anime_design_main.png/300px-Satoru_Gojo_anime_design_main.png',
+  sukuna:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/9/96/Ryomen_Sukuna_anime_design_main.png/300px-Ryomen_Sukuna_anime_design_main.png',
+  hakari:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/c/ca/Kinji_Hakari_anime_design_main.png/300px-Kinji_Hakari_anime_design_main.png',
+  yuta:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/b/b3/Yuta_Okkotsu_anime_design_main.png/300px-Yuta_Okkotsu_anime_design_main.png',
+  mahito:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/e/ea/Mahito_anime_design_main.png/300px-Mahito_anime_design_main.png',
+  jogo:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/8/8c/Jogo_anime_design_main.png/300px-Jogo_anime_design_main.png',
+  mahoraga:'https://static.wikia.nocookie.net/jujutsu-kaisen/images/thumb/3/3e/Mahoraga_anime_design_main.png/300px-Mahoraga_anime_design_main.png',
+};
+
+function preloadCharImgs() {
+  Object.entries(CHAR_IMG_URLS).forEach(([id, url]) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { CHAR_IMGS[id] = img; };
+    img.onerror = () => { CHAR_IMGS[id] = null; }; // fallback to pixel art
+    img.src = url;
+  });
+}
+
+// Draws a real character image if loaded, otherwise falls back to pixel art.
+function drawCharacter(ctx, id, frameIdx, cx, cy, scale=4, flip=false) {
+  const img = CHAR_IMGS[id];
+  const w = 80, h = 160; // display size
+  const dx = cx - w/2;
+  const dy = cy - h;
+
+  if (img) {
+    ctx.save();
+    ctx.imageSmoothingEnabled = true;
+    if (flip) {
+      ctx.translate(cx, cy);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, -w/2, -h, w, h);
+    } else {
+      ctx.drawImage(img, dx, dy, w, h);
+    }
+    ctx.restore();
+
+    // Draw glow aura around image on the attack frame
+    if (frameIdx === 1) {
+      const char = CHARS.find(c=>c.id===id) || (id==='mahoraga' ? MAHORAGA_CHAR : null);
+      if (char) drawPixelAura(ctx, cx, cy, char.color || '#7b2fff', scale, 20, 40, 1.5);
+    }
+  } else {
+    // Fallback: pixel art
+    drawPixelChar(ctx, id, frameIdx, cx, cy, scale, flip);
+  }
 }
 
 function drawPixelChar(ctx, id, frameIdx, cx, cy, scale=4, flip=false) {
@@ -3047,11 +3109,11 @@ function renderBattle(){
     if(pHitF>0){
       bCtx.save(); bCtx.globalAlpha=pHitF/14;
       bCtx.filter='brightness(12) saturate(0)';
-      drawPixelChar(bCtx,GS.player.id,pAttackFrame,px,py,PSCALE,false);
+      drawCharacter(bCtx,GS.player.id,pAttackFrame,px,py,PSCALE,false);
       bCtx.filter='none'; bCtx.restore();
       pHitF--;
     }
-    drawPixelChar(bCtx,GS.player.id,pAttackFrame,px,py,PSCALE,false);
+    drawCharacter(bCtx,GS.player.id,pAttackFrame,px,py,PSCALE,false);
     // name tag
     bCtx.fillStyle=GS.player.color; bCtx.font='bold 10px monospace';
     bCtx.textAlign='center'; bCtx.shadowColor=GS.player.color; bCtx.shadowBlur=8;
@@ -3069,11 +3131,11 @@ function renderBattle(){
     if(eHitF>0){
       bCtx.save(); bCtx.globalAlpha=eHitF/14;
       bCtx.filter='brightness(12) saturate(0)';
-      drawPixelChar(bCtx,GS.enemy.id,eAttackFrame,ex,ey,ESCALE,true);
+      drawCharacter(bCtx,GS.enemy.id,eAttackFrame,ex,ey,ESCALE,true);
       bCtx.filter='none'; bCtx.restore();
       eHitF--;
     }
-    drawPixelChar(bCtx,GS.enemy.id,eAttackFrame,ex,ey,ESCALE,true);
+    drawCharacter(bCtx,GS.enemy.id,eAttackFrame,ex,ey,ESCALE,true);
     bCtx.fillStyle=GS.enemy.color; bCtx.font='bold 10px monospace';
     bCtx.textAlign='center'; bCtx.shadowColor=GS.enemy.color; bCtx.shadowBlur=8;
     bCtx.fillText(GS.enemy.name, ex, ey+12);
@@ -3125,7 +3187,7 @@ function renderCardCanvas(canvas, char){
   const scale=3;
   ctx.imageSmoothingEnabled=false;
   drawPixelAura(ctx,w/2,h-14,char.color,scale);
-  drawPixelChar(ctx,char.id,0,w/2,h-14,scale,false);
+  drawCharacter(ctx,char.id,0,w/2,h-14,scale,false);
 }
 
 // ============================================================
@@ -3219,6 +3281,8 @@ function initBattle(){
   GS.mahoragaAdapted={};
   GS.mahoragaSeen={};
   GS.enemyLastType=null;
+  GS.fugazable=false;
+  GS.enemyLastMove=null;
   GS.playerTurn=true;
   GS.battleActive=true;
   GS.animating=false;
@@ -3319,8 +3383,47 @@ function updateButtons(){
   document.getElementById('btn-s2').disabled=!ok||p.ce<m.s2.cost;
   document.getElementById('btn-ult').disabled=!ok||p.ce<m.ultimate.cost;
   document.getElementById('turn-ind').textContent=ok?'⚡ YOUR TURN':'⏳ ENEMY TURN...';
+  // Counter: Fuga — appears when Boogie Woogie was used on you and it's your turn.
+  const fugaBtn=document.getElementById('btn-fuga');
+  if(fugaBtn){
+    const showFuga=GS.fugazable&&ok;
+    fugaBtn.style.display=showFuga?'block':'none';
+    fugaBtn.disabled=!showFuga;
+  }
 }
-function lockBtns(){['btn-basic','btn-s1','btn-s2','btn-ult'].forEach(id=>document.getElementById(id).disabled=true);}
+function lockBtns(){['btn-basic','btn-s1','btn-s2','btn-ult','btn-fuga'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=true;});}
+
+// Player triggers the Fuga counter — immediately swap back and stun the enemy.
+function doFugaCounter(){
+  if(!GS.fugazable||!GS.playerTurn||!GS.battleActive||GS.animating)return;
+  const e=GS.enemy;const ex=582,ey=258;
+  GS.animating=true; lockBtns();
+  GS.fugazable=false;
+  logMsg('Counter: FUGA! '+GS.player.name+' reverses the swap — '+e.name+' is stunned!','lu');
+  triggerFlash('#ffdd44',0.6); triggerShake(10);
+  spawnP(ex,ey-42,18,'#ffdd44',6,50);
+  addAnim('wave',{x:ex,y:ey-42,maxR:130,color:'#ffdd44',dur:34});
+  addStatus(GS.eStatuses,'stun',{turns:1});
+  sfxBlock();
+  document.getElementById('btn-fuga').style.display='none';
+  const p=GS.player;
+  setTimeout(()=>{
+    GS.stats.moves++;GS.stats.turns++;
+    GS.playerTurn=false; updateBars();
+    setTimeout(()=>{
+      tickStatuses('enemy');
+      updateBars();
+      if(e.hp<=0){onEnemyDead();return;}
+      doEnemyTurn(()=>{
+        tickStatuses('player');
+        updateBars();
+        if(p.hp<=0){onPlayerDead();return;}
+        e.ce=Math.min(e.maxCe,e.ce+14);
+        GS.playerTurn=true; GS.animating=false; updateBars();
+      });
+    },550);
+  },520);
+}
 
 // ============================================================
 //  LOGGING
@@ -3533,10 +3636,20 @@ function execPlayerMove(key,move,cb){
     addAnim('wave',{x:ex,y:ey-42,maxR:130,color:p.color,dur:34});
     triggerFlash(p.color,0.5);
     spawnP(ex,ey-42,18,p.color,6,50);
+    // ★ Fuga Counter — if the enemy used Boogie Woogie last turn, Sukuna reverses it.
+    const fugaCounter = (p.id==='sukuna') && (GS.enemyLastMove?.type==='swap');
     setTimeout(()=>{
       addStatus(GS.eStatuses,'stun',{turns:1});
       triggerShake(8);
       logMsg('Boogie Woogie! '+p.name+' claps — enemy position swapped, loses next turn!','lp');
+      if(fugaCounter){
+        const fdmg=30;
+        applyEDmg(fdmg);
+        triggerFlash('#ff2244',0.6); triggerShake(12);
+        spawnCurseP(ex,ey-42,28);
+        logMsg('FUGA! Sukuna reverses the technique — counter strike! '+fdmg+' damage!','lu');
+        GS.fugazable=false;
+      }
       sfxBlock(); updateBars(); setTimeout(cb,420);
     },300);
     return;
@@ -3713,6 +3826,10 @@ function execPlayerMove(key,move,cb){
         if(move.dot){addStatus(GS.eStatuses,'dot',{turns:move.dot.turns,dmg:move.dot.dmg});}
         if(move.burn){addStatus(GS.eStatuses,'burn',{turns:move.burn.turns,dmg:move.burn.dmg});spawnFireP(ex,ey-42,16);logMsg('Resonance ignites '+e.name+'!','ls');}
         if(move.heal){const h=Math.min(move.heal,p.maxHp-p.hp);p.hp+=h;if(h>0){logMsg(p.name+' recovers '+h+' HP!','lh');spawnP(px,py-42,12,'#44ff88',5,40);}}
+        // Sukuna Cleave — Fuga hint if Boogie Woogie was used on you.
+        if(p.id==='sukuna'&&GS.fugazable){
+          logMsg('Boogie Woogie was used on you — you can use Fuga to counter next swap!','lu');
+        }
         sfxHit(); updateBars(); setTimeout(cb,320);
       },330);
     }
@@ -4010,9 +4127,50 @@ function chooseEnemyMove(e,p){
   }
 }
 
+// Apply a Boogie-Woogie / swap stun to the PLAYER, honoring Fuga resistance.
+// Returns true if the player was actually stunned, false if it was countered.
+function tryStunPlayer(turns){
+  turns = turns||1;
+  // Fuga resistance status negates the stun entirely.
+  if(GS.pStatuses.some(s=>s.type==='fuga_ready')){
+    logMsg('FUGA! Resistance — Boogie Woogie countered!','lu');
+    triggerFlash('#ffdd44',0.6);
+    addStatus(GS.eStatuses,'stun',{turns:1}); // stun enemy instead
+    GS.pStatuses=GS.pStatuses.filter(s=>s.type!=='fuga_ready');
+    updateBars();
+    return false;
+  }
+  // Sukuna passive — senses the technique and reflects the stun back.
+  if(GS.player?.id==='sukuna'){
+    logMsg('Sukuna senses the technique — FUGA activates!','lu');
+    triggerFlash('#ff2244',0.5);
+    addStatus(GS.eStatuses,'stun',{turns:1}); // reflects stun back
+    updateBars();
+    return false; // don't stun the player
+  }
+  // Otherwise the player is stunned, and may Fuga-counter next turn.
+  addStatus(GS.pStatuses,'stun',{turns});
+  GS.fugazable=true;
+  updateBars();
+  return true;
+}
+
 function execEnemyMove(key,move,e,p,cb){
   const ex=582,ey=258,px=195,py=258;
   const crit=isCrit();
+  GS.enemyLastMove=move;
+  // Enemy Boogie Woogie — swap/stun against the player (subject to Fuga).
+  if(move.type==='swap'){
+    addAnim('wave',{x:px,y:py-42,maxR:130,color:e.color,dur:34});
+    triggerFlash(e.color,0.5); spawnP(px,py-42,18,e.color,6,50);
+    setTimeout(()=>{
+      const stunned=tryStunPlayer(1);
+      triggerShake(8);
+      if(stunned) logMsg(e.name+': Boogie Woogie! You are swapped — you lose your next turn!','le2');
+      sfxBlock(); updateBars(); setTimeout(cb,420);
+    },300);
+    return;
+  }
 
   if(key==='basic'){
     addAttackAnim(e.id,{sx:ex-32,sy:ey-32,tx:px+32,ty:py-32,color:e.color,size:11,dur:25});
@@ -4272,9 +4430,9 @@ function drawStoryPortrait(){
   const ctx=cv.getContext('2d');
   drawBg(ctx,cv.width,cv.height);
   // player on left, current chapter enemy on right
-  drawPixelChar(ctx,GS.player?.id||'yuji',0,150,cv.height-20,4,false);
+  drawCharacter(ctx,GS.player?.id||'yuji',0,150,cv.height-20,4,false);
   const en=ENEMIES[STORY[storyState.chapter].enemyIdx];
-  drawPixelChar(ctx,en.id,0,cv.width-150,cv.height-20,4,true);
+  drawCharacter(ctx,en.id,0,cv.width-150,cv.height-20,4,true);
 }
 
 function renderStoryLine(){
@@ -4388,7 +4546,7 @@ function renderTraining(){
   const idleY=Math.sin(idleT)*4;
   // player
   drawPixelAura(ctx,180,h-72,GS.player?.color||'#8b5cf6',5);
-  drawPixelChar(ctx,GS.player?.id||'yuji',0,180,h-72,5,false);
+  drawCharacter(ctx,GS.player?.id||'yuji',0,180,h-72,5,false);
   // training dummy
   drawDummy(ctx,580,h-72);
   // dummy HP
@@ -4611,6 +4769,7 @@ window.addEventListener('resize',()=>{
 });
 
 window.addEventListener('load',()=>{
+  preloadCharImgs();
   loadProgress();
   // Title screen is activated by splash screen closing; don't call setScreen here
 });
