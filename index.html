@@ -2462,7 +2462,7 @@ function preloadCharImgs() {
 }
 
 // Draws a real character image if loaded, otherwise falls back to pixel art.
-function drawCharacter(ctx, id, frameIdx, cx, cy, scale=4, flip=false) {
+function drawCharacter(ctx, id, frameIdx, cx, cy, scale=3, flip=false) {
   const img = CHAR_IMGS[id];
   const w = 80, h = 160; // display size
   const dx = cx - w/2;
@@ -2483,7 +2483,7 @@ function drawCharacter(ctx, id, frameIdx, cx, cy, scale=4, flip=false) {
     // Draw glow aura around image on the attack frame
     if (frameIdx === 1) {
       const char = CHARS.find(c=>c.id===id) || (id==='mahoraga' ? MAHORAGA_CHAR : null);
-      if (char) drawPixelAura(ctx, cx, cy, char.color || '#7b2fff', scale, 20, 40, 1.5);
+      if (char) drawPixelAura(ctx, cx, cy, char.color || '#7b2fff', scale, 32, 64, 1.5);
     }
   } else {
     // Fallback: pixel art
@@ -2491,7 +2491,7 @@ function drawCharacter(ctx, id, frameIdx, cx, cy, scale=4, flip=false) {
   }
 }
 
-function drawPixelChar(ctx, id, frameIdx, cx, cy, scale=4, flip=false) {
+function drawPixelChar(ctx, id, frameIdx, cx, cy, scale=3, flip=false) {
   const frames = SPR[id];
   if(!frames) return;
   const frame = frames[Math.min(frameIdx, frames.length-1)];
@@ -3185,7 +3185,7 @@ function drawHumanoid(ctx, x, y, color, glow, type, idleY=0, flip=false) {
 }
 
 // Pixel aura glow around sprite
-function drawPixelAura(ctx, x, y, color, scale=4, sw=16, sh=32, intensity=1) {
+function drawPixelAura(ctx, x, y, color, scale=3, sw=32, sh=64, intensity=1) {
   ctx.save();
   const grd=ctx.createRadialGradient(x,y-sh*scale/2,4,x,y-sh*scale/2,sw*scale*0.7);
   grd.addColorStop(0,color+'44'); grd.addColorStop(1,'transparent');
@@ -3678,7 +3678,7 @@ function renderBattle(){
   idleT+=0.028;
   const idleY  = Math.sin(idleT)*3;
   const idleYE = Math.sin(idleT*0.9+1)*3;
-  const PSCALE = 5, ESCALE = 5; // pixel scale for battle sprites
+  const PSCALE = 3, ESCALE = 3; // pixel scale for battle sprites
 
   // ambient particles
   if(Math.random()<0.22) spawnCurseP(195+(Math.random()-0.5)*20,230+(Math.random()-0.5)*50,1);
@@ -3693,7 +3693,7 @@ function renderBattle(){
     bCtx.save();
     bCtx.translate(px,py); bCtx.scale(sc,sc); bCtx.translate(-px,-py);
     drawPixelAura(bCtx,px,py,GS.player.color,PSCALE);
-    if(GS.mahoragaActive) drawPixelAura(bCtx,px,py,'#aaddff',PSCALE,16,32,0.6);
+    if(GS.mahoragaActive) drawPixelAura(bCtx,px,py,'#aaddff',PSCALE,32,64,0.6);
     if(pHitF>0){
       bCtx.save(); bCtx.globalAlpha=pHitF/14;
       bCtx.filter='brightness(12) saturate(0)';
@@ -5052,9 +5052,9 @@ function drawStoryPortrait(){
   const ctx=cv.getContext('2d');
   drawBg(ctx,cv.width,cv.height);
   // player on left, current chapter enemy on right
-  drawCharacter(ctx,GS.player?.id||'yuji',0,150,cv.height-20,4,false);
+  drawCharacter(ctx,GS.player?.id||'yuji',0,150,cv.height-20,3,false);
   const en=ENEMIES[STORY[storyState.chapter].enemyIdx];
-  drawCharacter(ctx,en.id,0,cv.width-150,cv.height-20,4,true);
+  drawCharacter(ctx,en.id,0,cv.width-150,cv.height-20,3,true);
 }
 
 function renderStoryLine(){
@@ -5167,8 +5167,8 @@ function renderTraining(){
   idleT+=0.028;
   const idleY=Math.sin(idleT)*4;
   // player
-  drawPixelAura(ctx,180,h-72,GS.player?.color||'#8b5cf6',5);
-  drawCharacter(ctx,GS.player?.id||'yuji',0,180,h-72,5,false);
+  drawPixelAura(ctx,180,h-72,GS.player?.color||'#8b5cf6',3);
+  drawCharacter(ctx,GS.player?.id||'yuji',0,180,h-72,3,false);
   // training dummy
   drawDummy(ctx,580,h-72);
   // dummy HP
