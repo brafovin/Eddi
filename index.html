@@ -203,6 +203,8 @@ body {
 .bar-bg { background:#160028; border-radius:3px; height:8px; overflow:hidden; }
 .hp-bar { height:8px; border-radius:3px; transition:width 0.4s; background:linear-gradient(90deg,#cc2266,#ff4499); }
 .ce-bar { height:8px; border-radius:3px; transition:width 0.4s; background:linear-gradient(90deg,#4a00cc,#9b4fff); }
+.ce-bar.low { animation:ceLowPulse 0.8s ease-in-out infinite; }
+@keyframes ceLowPulse { 0%,100%{ box-shadow:0 0 2px #9b4fff; opacity:0.7; } 50%{ box-shadow:0 0 12px #bb66ff; opacity:1; } }
 .hp-bar.mid { background:linear-gradient(90deg,#aa5500,#ff8800); }
 .hp-bar.low { background:linear-gradient(90deg,#880000,#cc2200); }
 .status-row { display:flex; gap:4px; flex-wrap:wrap; margin-top:5px; min-height:18px; }
@@ -399,6 +401,23 @@ body {
 .shop-buy-btn.equip { background:linear-gradient(135deg,#4a0099,#7b2fff); color:#fff; border-color:#9b4fff; }
 .shop-buy-btn.equipped { background:#1a3a1a; color:#66ff88; border-color:#44aa66; cursor:default; }
 .shop-buy-btn.cant { background:#2a2233; color:#776688; border-color:#443355; cursor:not-allowed; box-shadow:none; }
+
+/* ==============================
+   RESPONSIVE / MOBILE
+============================== */
+@media (max-width: 768px) {
+  .char-grid { grid-template-columns:repeat(2,1fr); gap:10px; }
+  .title-kanji { font-size:60px; letter-spacing:8px; }
+  .splash-kanji { font-size:80px; letter-spacing:10px; }
+  .title-divider { width:80%; }
+  #battle-canvas { width:100%; height:auto; }
+  .bars-wrap { grid-template-columns:1fr; gap:8px; max-width:100%; }
+  .big-btn, .confirm-btn { padding:18px 40px; font-size:18px; }
+  .select-header h2 { font-size:22px; }
+}
+@media (hover: none) and (pointer: coarse) {
+  .big-btn, .confirm-btn, .shop-buy-btn { min-height:48px; }
+}
 </style>
 </head>
 <body>
@@ -612,14 +631,52 @@ function playNote(freq, type, dur, vol, delay=0, endFreq=null) {
     osc.start(t0); osc.stop(t0+dur);
   } catch(e){}
 }
-function sfxHit()     { playNote(200,'sawtooth',0.09,0.3); playNote(130,'square',0.14,0.2,0.06); }
+function sfxHit()     { makeSound('hit'); }
 function sfxSpecial() { playNote(440,'sine',0.05,0.2); playNote(660,'sine',0.2,0.3,0.06,250); playNote(880,'triangle',0.25,0.2,0.12,440); }
-function sfxUlt()     { [110,220,330,440,550].forEach((f,i)=>playNote(f,'sawtooth',0.45,0.14,i*0.08)); playNote(60,'sine',0.9,0.4,0.2); }
+function sfxUlt()     { makeSound('domain'); }
 function sfxMenu()    { playNote(660,'sine',0.07,0.2); playNote(880,'sine',0.07,0.2,0.1); }
 function sfxVictory() { [523,659,784,1047].forEach((n,i)=>playNote(n,'sine',0.25,0.28,i*0.18)); playNote(523,'triangle',0.6,0.2,0.8); }
 function sfxDefeat()  { playNote(440,'sawtooth',0.3,0.3); playNote(330,'sawtooth',0.3,0.3,0.22); playNote(220,'sawtooth',0.65,0.35,0.44,110); }
 function sfxCursed()  { playNote(200,'sawtooth',0.06,0.15); playNote(155,'square',0.18,0.2,0.04,260); }
-function sfxBlock()   { playNote(300,'square',0.08,0.25); playNote(350,'sine',0.1,0.2,0.05); }
+function sfxBlock()   { playNote(300,'square',0.08,0.25); playNote(350,'sine',0.1,0.2,0.05); makeSound('deflect'); }
+
+// ── Rich synthesized SFX (reuses the shared AudioContext) ──
+function makeSound(type){
+  const ctx = getActx(); if(!ctx) return;
+  const now = ctx.currentTime;
+  const tone = (freq,endFreq,wave,vol,dur,delay=0,attack=0)=>{
+    try{
+      const osc=ctx.createOscillator(), gain=ctx.createGain();
+      osc.type=wave; osc.connect(gain); gain.connect(ctx.destination);
+      const t=now+delay;
+      osc.frequency.setValueAtTime(freq,t);
+      if(endFreq) osc.frequency.exponentialRampToValueAtTime(Math.max(1,endFreq),t+dur);
+      if(attack){ gain.gain.setValueAtTime(0.0001,t); gain.gain.linearRampToValueAtTime(vol,t+attack); }
+      else gain.gain.setValueAtTime(vol,t);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      osc.start(t); osc.stop(t+dur+0.02);
+    }catch(e){}
+  };
+  const noise=(vol,dur,delay=0)=>{
+    try{
+      const len=Math.floor(ctx.sampleRate*dur);
+      const buf=ctx.createBuffer(1,len,ctx.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len);
+      const src=ctx.createBufferSource(); src.buffer=buf;
+      const gain=ctx.createGain(); src.connect(gain); gain.connect(ctx.destination);
+      const t=now+delay; gain.gain.setValueAtTime(vol,t);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      src.start(t); src.stop(t+dur+0.02);
+    }catch(e){}
+  };
+  if(type==='hit'){ tone(220,55,'sawtooth',0.5,0.2); noise(0.25,0.08); }
+  else if(type==='bigHit'){ tone(100,30,'sawtooth',0.7,0.4); tone(60,28,'sine',0.5,0.35); noise(0.4,0.12); }
+  else if(type==='domain'){ tone(55,55,'sine',0.45,2.0,0,0.3); tone(440,880,'square',0.18,1.5,0,0.3); tone(110,110,'sawtooth',0.2,1.8,0.1,0.4); }
+  else if(type==='jackpot'){ [523,659,784,1047].forEach((f,i)=>tone(f,f,'sine',0.38,0.4,i*0.12,0.05)); }
+  else if(type==='mahoraga'){ tone(30,80,'sawtooth',0.65,2.5,0,0.5); tone(1200,300,'square',0.12,1.2,0.2,0.1); noise(0.3,0.4); }
+  else if(type==='deflect'){ tone(620,920,'triangle',0.3,0.1); tone(440,440,'square',0.18,0.08,0.02); noise(0.15,0.05); }
+}
 
 // ============================================================
 //  GAME DATA
@@ -2517,6 +2574,18 @@ function animCharOverlay(which, lean){
   }
 }
 
+// Red damage-tint flash on a character's overlay image
+function flashCharOverlay(which){
+  const el = which==='player' ? overlayPlayer : overlayEnemy;
+  if(!el || el.style.display==='none') return;
+  const flip = which==='enemy' ? 'scaleX(-1)' : 'scaleX(1)';
+  const prevFilter = el.style.filter;
+  const prevTransform = el.style.transform || flip;
+  el.style.filter = 'drop-shadow(0 0 18px #ff2233) brightness(1.6) sepia(1) saturate(6) hue-rotate(-35deg)';
+  el.style.transform = prevTransform + ' translateX('+(which==='enemy'?6:-6)+'px)';
+  setTimeout(()=>{ el.style.filter = prevFilter; el.style.transform = prevTransform; }, 130);
+}
+
 function preloadCharImgs(){ /* legacy — overlays load on demand */ }
 const CHAR_IMGS = {}; // kept for drawCharacter fallback check
 
@@ -2668,8 +2737,16 @@ function drawBg(ctx, w, h) {
 
   // ground
   ctx.fillStyle='#120028'; ctx.fillRect(0,h-55,w,55);
-  ctx.strokeStyle='#330066'; ctx.lineWidth=2;
+  // glowing reflective floor line
+  const tint0 = (GS && GS.player && GS.player.color) ? GS.player.color : '#7b2fff';
+  const floorGlow = ctx.createLinearGradient(0,h-55,0,h);
+  floorGlow.addColorStop(0, tint0+'33'); floorGlow.addColorStop(1,'transparent');
+  ctx.fillStyle=floorGlow; ctx.fillRect(0,h-55,w,55);
+  ctx.save();
+  ctx.shadowColor=tint0; ctx.shadowBlur=14+Math.sin(Date.now()*0.003)*6;
+  ctx.strokeStyle='#5522aa'; ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(0,h-55);ctx.lineTo(w,h-55);ctx.stroke();
+  ctx.restore();
 
   // animated cursed-energy wisps drifting upward, tinted by the player's color
   const tint = (GS && GS.player && GS.player.color) ? GS.player.color : '#7b2fff';
@@ -3277,6 +3354,10 @@ function drawPixelAura(ctx, x, y, color, scale=3, sw=32, sh=64, intensity=1) {
 // ── Floating damage numbers ──
 function spawnFloatNum(x, y, text, color, big=false) {
   floatNums.push({ x, y, text, color, big, vy:-2.2, life:55, maxLife:55 });
+}
+function spawnFloatCoin(x, y, amount) {
+  // Floating "+X 💰" gold text that drifts up and lingers
+  floatNums.push({ x, y, text:'+'+amount+' 💰', color:'#ffcc00', big:true, vy:-1.6, life:80, maxLife:80 });
 }
 function updateFloatNums() {
   floatNums = floatNums.filter(f=>f.life>0);
@@ -4263,7 +4344,11 @@ function updateBars(){
   const ecepct=Math.max(0,e.ce/e.maxCe*100);
 
   document.getElementById('p-hp-bar').style.width=phpct+'%';
-  document.getElementById('p-ce-bar').style.width=pcepct+'%';
+  const pceb=document.getElementById('p-ce-bar');
+  pceb.style.width=pcepct+'%';
+  pceb.className='ce-bar'+(pcepct<30?' low':'');
+  const eceb=document.getElementById('e-ce-bar');
+  eceb.className='ce-bar'+(ecepct<30?' low':'');
   document.getElementById('e-hp-bar').style.width=ehpct+'%';
   document.getElementById('e-ce-bar').style.width=ecepct+'%';
 
@@ -4417,6 +4502,7 @@ function activateJackpotMode(){
   // Visual: gold aura on player
   spawnSpiralP(195,216,40,'#ffdd00');
   addAnim('domain',{kanji:'賭',name:'JACKPOT MODE',dur:50,color:'#ffcc00'});
+  makeSound('jackpot');
   renderMoves();
 }
 
@@ -4454,6 +4540,7 @@ function checkMahoraga(){
       addAnim('domain',{kanji:'羅', name:'MAHORAGA MANIFESTS', dur:70, color:'#334488'});
       triggerFlash('#000022',0.97,9);
       triggerShake(22);
+      makeSound('mahoraga');
 
       setTimeout(()=>{
         // ---- Phase 3: Mahoraga emerges, keeping HP/CE, gaining stats ----
@@ -4519,15 +4606,17 @@ function applyPDmg(dmg, moveType){
     spawnFloatNum(582, 180, '-'+ref, '#00ccff', false);
   }
   GS.player.hp-=dmg;
-  playerHit();
+  if(GS.player.hp<0)GS.player.hp=0;
+  playerHit(); flashCharOverlay('player');
   triggerShake(dmg>40?12:8);
   triggerFlash('#ff4466', dmg>40?0.4:0.25, 3);
   spawnFloatNum(195+(Math.random()-0.5)*30, 155, '-'+dmg, '#ff4466', dmg>40);
 }
 function applyEDmg(dmg){
   GS.enemy.hp-=dmg;
+  if(GS.enemy.hp<0)GS.enemy.hp=0;
   GS.stats.dmg+=dmg;
-  enemyHit();
+  enemyHit(); flashCharOverlay('enemy');
   spawnHitEffect(582, 258-42, (GS.player&&GS.player.color)||'#ffffff');
   spawnFloatNum(582+(Math.random()-0.5)*30, 155, '-'+dmg, '#ffcc00', dmg>40);
   // anime impact frame + hitstop
@@ -4597,17 +4686,19 @@ function playMoveFX(id,key,c){
         addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ffaa44',size:16,dur:20});
         setTimeout(()=>addAnim('explode',{x:ex,y:ey-42,maxR:95,color:'#ffaa44',dur:34}),220);
       },
-      s2:()=>{ // Black Flash — dark flash, CE distortion, then white impact + explosion
-        triggerFlash('#110022',0.9,2); // brief purple/black screen flash
-        addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#7733cc',size:22,dur:22});
+      s2:()=>{ // Black Flash — speedlines, purple-black darkness, then white impact frame
+        addAnim('speedlines',{x:px,y:py-42,color:'#330033',dur:10});
+        triggerFlash('#110022',0.95,4); // purple-black darkness
+        addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#5500aa',size:28,dur:22});
         setTimeout(()=>{
           // purple/black CE distortion rings
           addAnim('wave',{x:ex,y:ey-42,maxR:90,color:'#220044',dur:26});
           addAnim('wave',{x:ex,y:ey-42,maxR:130,color:'#7733cc',dur:30});
-          triggerFlash('#ffffff',1.0,3); // instant white impact frame
-          triggerShake(18); hitstop(150);
+          triggerFlash('#ffffff',1.0,5); // instant white impact frame
+          triggerShake(20); hitstop(160);
           addAnim('speedlines',{x:ex,y:ey-42,color:'#aa55ff',dur:14});
-          addAnim('explode',{x:ex,y:ey-42,maxR:130,color:'#330055',dur:42});
+          addAnim('explode',{x:ex,y:ey-42,maxR:140,color:'#330055',dur:42});
+          makeSound('bigHit');
         },200);
       }
     },
@@ -4631,12 +4722,30 @@ function playMoveFX(id,key,c){
         addAnim('proj',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-52,color:'#00aaff',size:18,dur:28});
         setTimeout(()=>{ triggerFlash('#00ccff',0.8,2); addAnim('wave',{x:ex-42,y:ey-52,maxR:90,color:'#00ccff',dur:26}); },470);
       },
-      s1:()=>addAnim('wave',{x:ex,y:ey-42,maxR:150,color:'#cc66ff',dur:38}),
+      s1:()=>{ // Hollow Purple — red + blue beams merge into purple explosion
+        addAnim('beam',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-32,color:'#ff0044',dur:24});
+        addAnim('beam',{sx:px+42,sy:py-32,tx:ex-42,ty:ey-52,color:'#0044ff',dur:24});
+        setTimeout(()=>{
+          addAnim('explode',{x:ex,y:ey-42,maxR:200,color:'#cc44ff',dur:60});
+          addAnim('wave',{x:ex,y:ey-42,maxR:170,color:'#cc44ff',dur:34});
+          triggerFlash('#cc44ff',0.9,5);
+          triggerShake(18); hitstop(120);
+          makeSound('bigHit');
+        },300);
+      },
       s2:()=>triggerFlash('#ff0000',0.9)
     },
     sukuna:{
       basic:()=>S(px+42,py-42,ex-32,ey-32,'#ff3322',10,18),
-      s1:()=>addAnim('slash',{x:ex,y:ey-42,color:'#ff0022',dur:24,big:true}), // Malevolent Shrine massive
+      s1:()=>{ // Malevolent Shrine — slashes cutting across the whole screen
+        for(let i=0;i<6;i++){
+          setTimeout(()=>{
+            addAnim('slash',{x:Math.random()*640+80,y:Math.random()*260+60,color:'#ff0022',dur:18,big:true});
+            triggerShake(6);
+          },i*80);
+        }
+        setTimeout(()=>{ triggerFlash('#ff0000',0.8,4); makeSound('domain'); },480);
+      },
       s2:()=>{ for(let i=0;i<3;i++) setTimeout(()=>S(px+42,py-42,ex-32,ey-32,'#ff2244',9,14),i*120); } // Dismantle multi
     },
     hakari:{
@@ -5331,6 +5440,7 @@ function onEnemyDead(){
   const earned=10+Math.floor(Math.random()*21); // 10-30 coins
   GS.coins+=earned; saveProgress();
   logMsg('💰 +'+earned+' coins! (Total: '+GS.coins+')','ls');
+  spawnFloatCoin(582, 150, earned);
   sfxVictory();
   addAnim('explode',{x:582,y:216,maxR:190,color:GS.enemy.color,dur:62});
   spawnCurseP(582,216,85);
