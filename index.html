@@ -681,16 +681,16 @@ const CHARS = [
   {
     id:'sukuna', name:'Ryomen Sukuna',
     title:'両面宿儺 · KING OF CURSES',
-    lore:'The King of Curses, vessel-bound undisputed strongest. Tears foes apart with Dismantle and Cleave — pure slashing cursed technique — and opens the guaranteed-hit domain Malevolent Shrine.',
+    lore:'The King of Curses. Tears foes apart with Dismantle and Cleave. Can swap positions with Boogie Woogie — stolen technique — and opens the guaranteed-hit domain Malevolent Shrine.',
     color:'#ff2244', glow:'#cc002288',
     hp:160, maxHp:160, ce:140, maxCe:140,
     atk:102, def:76, spd:90,
     sv:{hp:92,atk:100,def:76,spd:90},
     moves:{
-      basic:   {name:'⚔ Dismantle',     cost:0,  dmg:[28,42], type:'slash'},
-      s1:      {name:'✦ Cleave',         cost:20, dmg:[45,65], type:'slash', stun:0.2},
-      s2:      {name:'◈ Dismantle ×3',   cost:35, dmg:[18,28], type:'slash', pmulti:3},
-      ultimate:{name:'★ Malevolent Shrine',cost:60,dmg:[110,150], type:'ultimate'}
+      basic:   {name:'⚔ Dismantle',        cost:0,  dmg:[28,42], type:'slash'},
+      s1:      {name:'✦ Boogie Woogie',     cost:22, dmg:[0,0],   type:'swap'},
+      s2:      {name:'◈ Dismantle ×3',      cost:35, dmg:[18,28], type:'slash', pmulti:3},
+      ultimate:{name:'★ Malevolent Shrine', cost:60, dmg:[110,150], type:'ultimate'}
     }
   },
   {
@@ -723,21 +723,6 @@ const CHARS = [
       ultimate:{name:'★ True Mutual Love',  cost:60, dmg:[78,108], type:'ultimate', heal:40}
     }
   },
-  {
-    id:'todo', name:'Aoi Todo',
-    title:'東堂葵 · BOOGIE WOOGIE',
-    lore:'Grade 1 sorcerer. Claps to swap — Boogie Woogie. Yuji\'s best friend and rival, a towering powerhouse of raw strength.',
-    color:'#cc6600', glow:'#ff880088',
-    hp:200, maxHp:200, ce:110, maxCe:110,
-    atk:52, def:38, spd:48,
-    sv:{hp:200,atk:52,def:38,spd:48},
-    moves:{
-      basic:   {name:'⚔ Thunderclap',            cost:0,  dmg:[28,38],  type:'physical'},
-      s1:      {name:'✦ Boogie Woogie',          cost:22, dmg:[0,0],    type:'swap'},
-      s2:      {name:'◈ Divergent Fist (Synced)',cost:30, dmg:[55,75],  type:'physical'},
-      ultimate:{name:'★ Black Flash Combo',      cost:55, dmg:[90,130], type:'ultimate'}
-    }
-  }
 ];
 
 const ENEMIES = [
@@ -3426,14 +3411,7 @@ function playMoveFX(id,key,c){
       s1:()=>addAnim('beam',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-52,color:'#ffffff',dur:30}), // Copy
       s2:()=>addAnim('summon',{x:ex-60,y:ey-22,color:'#ff4488',dur:34}) // Rika Manifest
     },
-    todo:{
-      basic:()=>addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ff8800',size:16,dur:20}),
-      s1:()=>{ addAnim('wave',{x:ex,y:ey-42,maxR:120,color:'#ff8800',dur:34}); triggerFlash('#ffaa44',0.4); }, // Boogie Woogie
-      s2:()=>{ // Synced Divergent Fist
-        addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:'#ff8800',size:20,dur:22});
-        setTimeout(()=>addAnim('explode',{x:ex,y:ey-42,maxR:105,color:'#ffaa44',dur:38}),200);
-      }
-    }
+    sukuna_s1_swap:()=>{ addAnim('wave',{x:ex,y:ey-42,maxR:130,color:'#ff2244',dur:34}); triggerFlash('#ff4466',0.5); }
   };
   const fn=map[id]&&map[id][key];
   if(fn) fn();
@@ -3444,14 +3422,15 @@ function execPlayerMove(key,move,cb){
   const px=195,py=258,ex=582,ey=258;
   const crit=isCrit();
 
-  // Todo's Boogie Woogie — position swap that stuns the enemy.
-  if(key==='s1'&&move.type==='swap'){
-    playMoveFX(p.id,'s1',{px,py,ex,ey});
-    spawnP(ex,ey-42,16,'#ff8800',6,50);
+  // Boogie Woogie — position swap that stuns the enemy.
+  if(move.type==='swap'){
+    addAnim('wave',{x:ex,y:ey-42,maxR:130,color:p.color,dur:34});
+    triggerFlash(p.color,0.5);
+    spawnP(ex,ey-42,18,p.color,6,50);
     setTimeout(()=>{
       addStatus(GS.eStatuses,'stun',{turns:1});
       triggerShake(8);
-      logMsg('Boogie Woogie! Todo claps — enemy is confused and loses their next turn!','lp');
+      logMsg('Boogie Woogie! '+p.name+' claps — enemy position swapped, loses next turn!','lp');
       sfxBlock(); updateBars(); setTimeout(cb,420);
     },300);
     return;
@@ -3783,30 +3762,6 @@ function execPlayerMove(key,move,cb){
         },500);
       },400);
 
-    } else if(p.id==='todo'){
-      // ★ Black Flash Combo — synchronized maximum-output flurry
-      addAnim('charge',{x:px+40,y:py-58,maxR:90,color:'#ff8800',dur:36});
-      spawnSpiralP(px,py-50,32,'#ff8800');
-      setTimeout(()=>{
-        addAnim('domain',{kanji:'拍',name:'BLACK FLASH COMBO',dur:84,color:'#ff8800'});
-        triggerFlash('#ffaa44',0.6);
-        setTimeout(()=>{
-          let hits=3;
-          const burst=()=>{
-            if(hits<=0){ triggerShake(16); updateBars(); setTimeout(cb,780); return; }
-            addAnim('fist',{sx:px+42,sy:py-42,tx:ex-32,ty:ey-32,color:hits===1?'#7733cc':'#ff8800',size:20,dur:18});
-            setTimeout(()=>{
-              const d=calcDmg(move.dmg,p.atk*0.5,e.def,isCrit());
-              applyEDmg(d);
-              spawnFireP(ex,ey-42,22); triggerShake(8); triggerFlash(hits===1?'#330055':'#ffaa44',0.4);
-              addAnim('explode',{x:ex,y:ey-42,maxR:hits===1?170:100,color:hits===1?'#7733cc':'#ff8800',dur:hits===1?52:30});
-              logMsg('Black Flash combo strike — '+d+' DAMAGE!','lu');
-              updateBars(); hits--; burst();
-            },240);
-          };
-          burst();
-        },480);
-      },380);
     }
   }
 }
