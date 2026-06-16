@@ -457,8 +457,8 @@ body {
   <div id="battle-coins">💰 0</div>
   <div id="battle-arena" style="position:relative;display:inline-block;max-width:100%;">
     <canvas id="battle-canvas" width="780" height="370"></canvas>
-    <img id="char-player-img" crossorigin="anonymous" style="position:absolute;bottom:20px;left:10%;width:110px;height:auto;image-rendering:pixelated;pointer-events:none;display:none;filter:drop-shadow(0 0 10px var(--char-glow,#7b2fff));transition:transform 0.15s;" />
-    <img id="char-enemy-img"  crossorigin="anonymous" style="position:absolute;bottom:20px;right:10%;width:110px;height:auto;image-rendering:pixelated;pointer-events:none;display:none;filter:drop-shadow(0 0 10px var(--char-glow,#ff2244));transform:scaleX(-1);transition:transform 0.15s;" />
+    <img id="char-player-img" style="position:absolute;bottom:0;left:8%;width:130px;height:auto;image-rendering:auto;pointer-events:none;display:none;filter:drop-shadow(0 0 14px var(--char-glow,#7b2fff)) drop-shadow(0 0 4px #000);transition:transform 0.12s,filter 0.12s;transform-origin:bottom center;" />
+    <img id="char-enemy-img"  style="position:absolute;bottom:0;right:8%;width:130px;height:auto;image-rendering:auto;pointer-events:none;display:none;filter:drop-shadow(0 0 14px var(--char-glow,#ff2244)) drop-shadow(0 0 4px #000);transform:scaleX(-1);transition:transform 0.12s,filter 0.12s;transform-origin:bottom center;" />
   </div>
   <div class="bars-wrap">
     <div class="bars-side">
@@ -2446,17 +2446,24 @@ function getSkinPalette(id){
 //  REAL CHARACTER IMAGES (with pixel-art fallback)
 // ============================================================
 // Character overlay images (shown as HTML img elements on top of canvas — no CORS issue)
+// wsrv.nl = free CORS-proxy + image CDN, allows loading wikia/external images into canvas
+const _W = (path, w=400) => `https://wsrv.nl/?url=${encodeURIComponent('static.wikia.nocookie.net/jujutsu-kaisen/images/'+path)}&w=${w}&output=png`;
 const CHAR_IMG_URLS = {
-  yuji:    'https://www.pngall.com/wp-content/uploads/13/Yuji-Itadori-PNG-Image.png',
-  megumi:  'https://www.pngall.com/wp-content/uploads/13/Megumi-Fushiguro-PNG.png',
-  nobara:  'https://www.pngall.com/wp-content/uploads/13/Nobara-Kugisaki-PNG.png',
-  gojo:    'https://www.pngall.com/wp-content/uploads/13/Satoru-Gojo-PNG.png',
-  sukuna:  'https://www.pngall.com/wp-content/uploads/13/Ryomen-Sukuna-PNG.png',
-  hakari:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/c/ca/Kinji_Hakari_anime_design_main.png',
-  yuta:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/b/b3/Yuta_Okkotsu_anime_design_main.png',
-  mahito:  'https://static.wikia.nocookie.net/jujutsu-kaisen/images/e/ea/Mahito_anime_design_main.png',
-  jogo:    'https://static.wikia.nocookie.net/jujutsu-kaisen/images/8/8c/Jogo_anime_design_main.png',
-  mahoraga:'https://static.wikia.nocookie.net/jujutsu-kaisen/images/3/3e/Mahoraga_anime_design_main.png',
+  yuji:    _W('9/93/Yuji_Itadori_anime_design_main.png'),
+  megumi:  _W('1/1e/Megumi_Fushiguro_anime_design_main.png'),
+  nobara:  _W('5/52/Nobara_Kugisaki_anime_design_main.png'),
+  gojo:    _W('f/f5/Satoru_Gojo_anime_design_main.png'),
+  sukuna:  _W('9/96/Ryomen_Sukuna_anime_design_main.png'),
+  hakari:  _W('c/ca/Kinji_Hakari_anime_design_main.png'),
+  yuta:    _W('b/b3/Yuta_Okkotsu_anime_design_main.png'),
+  mahito:  _W('e/ea/Mahito_anime_design_main.png'),
+  jogo:    _W('8/8c/Jogo_anime_design_main.png'),
+  mahoraga:_W('3/3e/Mahoraga_anime_design_main.png', 600),
+};
+// Mahoraga gets a larger display size
+const CHAR_IMG_SIZE = {
+  mahoraga: {w:200, h:'auto'},
+  default:  {w:130, h:'auto'},
 };
 
 // Overlay img elements placed on top of canvas (avoids CORS canvas taint)
@@ -2472,9 +2479,12 @@ function setCharOverlay(which, id, glowColor){
   if(!el) return;
   const url = CHAR_IMG_URLS[id];
   if(url){
+    const size = CHAR_IMG_SIZE[id] || CHAR_IMG_SIZE.default;
     el.src = url;
+    el.style.width = size.w + 'px';
     el.style.setProperty('--char-glow', glowColor||'#7b2fff');
     el.style.display = 'block';
+    el.onerror = ()=>{ el.style.display='none'; }; // hide if URL fails
   } else {
     el.style.display = 'none';
   }
@@ -2488,8 +2498,15 @@ function hideCharOverlays(){
 function animCharOverlay(which, lean){
   const el = which==='player' ? overlayPlayer : overlayEnemy;
   if(!el) return;
-  const flip = which==='enemy' ? 'scaleX(-1)' : '';
-  el.style.transform = flip + (lean ? ` rotate(${lean}deg)` : '');
+  const flip = which==='enemy' ? 'scaleX(-1)' : 'scaleX(1)';
+  const glowColor = el.style.getPropertyValue('--char-glow') || '#ffffff';
+  if(lean){
+    el.style.transform = `${flip} rotate(${lean}deg) scale(1.08)`;
+    el.style.filter = `drop-shadow(0 0 24px ${glowColor}) drop-shadow(0 0 8px #fff) drop-shadow(0 0 4px #000)`;
+  } else {
+    el.style.transform = flip;
+    el.style.filter = `drop-shadow(0 0 14px ${glowColor}) drop-shadow(0 0 4px #000)`;
+  }
 }
 
 function preloadCharImgs(){ /* legacy — overlays load on demand */ }
