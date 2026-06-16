@@ -726,6 +726,36 @@ const CHARS = [
       ultimate:{name:'★ True Mutual Love',  cost:60, dmg:[78,108], type:'ultimate', heal:40}
     }
   },
+  {
+    id:'mahito', name:'Mahito',
+    title:'真人 · IDLE TRANSFIGURATION',
+    lore:'A cursed spirit born from human hatred. Reshapes souls with his touch — transfiguring bodies at will. His domain forces victims into a battle of the soul.',
+    color:'#cc55ff', glow:'#aa22dd88',
+    hp:132, maxHp:132, ce:115, maxCe:115,
+    atk:82, def:60, spd:74,
+    sv:{hp:82,atk:82,def:60,spd:74},
+    moves:{
+      basic:   {name:'⚔ Idle Transfiguration',       cost:0,  dmg:[20,30], type:'curse'},
+      s1:      {name:'✦ Polymorphic Soul Isomer',      cost:28, dmg:[38,55], type:'curse', pmulti:3},
+      s2:      {name:'◈ Body Repel',                   cost:32, dmg:[0,0],   type:'curse', shield:2, heal:30},
+      ultimate:{name:'★ Instant Spirit Body',          cost:55, dmg:[80,110], type:'ultimate', dot:{dmg:10,turns:3}}
+    }
+  },
+  {
+    id:'jogo', name:'Jogo',
+    title:'漏瑚 · MAXIMUM METEOR',
+    lore:'A volcanic cursed spirit who believes curses are the true humans. His flames reduce everything to ash — and his Maximum Meteor is an extinction-level event.',
+    color:'#ff6600', glow:'#ff440088',
+    hp:148, maxHp:148, ce:120, maxCe:120,
+    atk:94, def:52, spd:62,
+    sv:{hp:92,atk:94,def:52,spd:62},
+    moves:{
+      basic:   {name:'⚔ Ember Insects',          cost:0,  dmg:[22,34], type:'fire', burn:{dmg:10,turns:2}},
+      s1:      {name:'✦ Disaster Flames',         cost:26, dmg:[40,58], type:'fire', burn:{dmg:12,turns:3}},
+      s2:      {name:'◈ Maximum Meteor',          cost:38, dmg:[55,78], type:'fire', burn:{dmg:14,turns:2}},
+      ultimate:{name:'★ Coffin of the Iron Mountain', cost:60, dmg:[90,120], type:'ultimate', burn:{dmg:15,turns:3}}
+    }
+  },
 ];
 
 // Mahoraga — Megumi transforms into this when his HP drops to <=20.
@@ -803,6 +833,8 @@ const GS = {
   animating: false,
   fugazable: false,
   enemyLastMove: null,
+  jackpotMode: 0,
+  jackpotSavedMoves: null,
   stats: {dmg:0, moves:0, turns:0, killed:0},
 
   // status arrays  [{type,turns,...}]
@@ -3283,6 +3315,8 @@ function initBattle(){
   GS.enemyLastType=null;
   GS.fugazable=false;
   GS.enemyLastMove=null;
+  GS.jackpotMode=0;
+  if(GS.jackpotSavedMoves&&GS.player?.id==='hakari'){ GS.player.moves=GS.jackpotSavedMoves; GS.jackpotSavedMoves=null; }
   GS.playerTurn=true;
   GS.battleActive=true;
   GS.animating=false;
@@ -3461,6 +3495,38 @@ function renderMoves(){
   document.getElementById('ult-cost').textContent=m.ultimate.cost+' CE';
 }
 
+const HAKARI_NORMAL_MOVES = null; // set on first jackpot
+const HAKARI_OP_MOVES = {
+  basic:    {name:'⚡ Death Gamble Strike',   cost:0,  dmg:[60,90],  type:'physical'},
+  s1:       {name:'💀 Cursed Reversal Burst', cost:15, dmg:[80,110], type:'cursed', heal:25},
+  s2:       {name:'🎰 All-In Annihilation',   cost:25, dmg:[100,140],type:'cursed'},
+  ultimate: {name:'★★ INFINITE JACKPOT',      cost:40, dmg:[150,200],type:'ultimate'}
+};
+
+function activateJackpotMode(){
+  if(!GS.player||GS.player.id!=='hakari') return;
+  if(!GS.jackpotMode){
+    GS.jackpotSavedMoves = {...GS.player.moves};
+  }
+  GS.jackpotMode = 2; // 2 bonus turns of OP mode
+  GS.player.moves = {...HAKARI_OP_MOVES};
+  // Visual: gold aura on player
+  spawnSpiralP(195,216,40,'#ffdd00');
+  addAnim('domain',{kanji:'賭',name:'JACKPOT MODE',dur:50,color:'#ffcc00'});
+  renderMoves();
+}
+
+function tickJackpotMode(){
+  if(!GS.jackpotMode||!GS.player||GS.player.id!=='hakari') return;
+  GS.jackpotMode--;
+  if(GS.jackpotMode<=0){
+    GS.jackpotMode=0;
+    if(GS.jackpotSavedMoves) GS.player.moves = GS.jackpotSavedMoves;
+    renderMoves();
+    logMsg('Jackpot mode fades — Hakari returns to normal.','ls');
+  }
+}
+
 function checkMahoraga(){
   // Activates when Megumi drops to 20 HP or below
   if(GS.player && GS.player.id==='megumi' && !GS.mahoragaActive && GS.player.hp>0
@@ -3545,6 +3611,7 @@ function doPlayerMove(key){
       GS.playerTurn=true; GS.animating=false; updateBars();
       return;
     }
+    tickJackpotMode();
     GS.playerTurn=false; updateBars();
     setTimeout(()=>{
       tickStatuses('enemy');
@@ -3595,12 +3662,9 @@ function playMoveFX(id,key,c){
       s2:()=>addAnim('explode',{x:ex,y:ey-42,maxR:95,color:'#ff5522',dur:36}) // Hairpin resonance
     },
     gojo:{
-      basic:()=>addAnim('beam',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-52,color:'#00ccff',dur:30}),
-      s1:()=>addAnim('wave',{x:ex,y:ey-42,maxR:150,color:'#cc66ff',dur:38}), // Hollow Purple wide
-      s2:()=>{ // Red/Blue split
-        addAnim('beam',{sx:px+42,sy:py-58,tx:ex-42,ty:ey-58,color:'#ff2244',dur:30});
-        addAnim('beam',{sx:px+42,sy:py-46,tx:ex-42,ty:ey-46,color:'#2266ff',dur:30});
-      }
+      basic:()=>addAnim('proj',{sx:px+42,sy:py-52,tx:ex-42,ty:ey-52,color:'#00aaff',size:18,dur:28}),
+      s1:()=>addAnim('wave',{x:ex,y:ey-42,maxR:150,color:'#cc66ff',dur:38}),
+      s2:()=>triggerFlash('#ff0000',0.9)
     },
     sukuna:{
       basic:()=>S(px+42,py-42,ex-32,ey-32,'#ff3322',10,18),
@@ -3690,7 +3754,7 @@ function execPlayerMove(key,move,cb){
         sfxHit(); updateBars(); setTimeout(cb,340);
       },330);
     } else if(move.type==='gamble'){
-      // Hakari Jackpot — 50% deal 80 dmg + bonus turn, 50% heal 30
+      // Hakari Jackpot — 50% deal 80 dmg + bonus turn + OP moveset, 50% heal 30
       addAnim('charge',{x:px+40,y:py-50,maxR:60,color:'#ffcc00',dur:24});
       spawnSpiralP(px,py-50,22,'#ffcc00');
       setTimeout(()=>{
@@ -3701,10 +3765,12 @@ function execPlayerMove(key,move,cb){
             const dmg=80;
             applyEDmg(dmg);
             spawnFireP(ex,ey-42,40); spawnP(ex,ey-42,16,'#ffee66',6,55);
-            triggerFlash('#ffee66',0.55); triggerShake(12);
-            addAnim('explode',{x:ex,y:ey-42,maxR:120,color:'#ffcc00',dur:42});
+            triggerFlash('#ffee66',0.8); triggerShake(14);
+            addAnim('explode',{x:ex,y:ey-42,maxR:140,color:'#ffcc00',dur:48});
+            // JACKPOT: activate OP moveset for 2 turns
             GS.bonusTurn=true;
-            logMsg('🎰🎰🎰 JACKPOT HIT! '+dmg+' damage — Hakari gets another turn!','lu');
+            activateJackpotMode();
+            logMsg('🎰🎰🎰 JACKPOT!!! '+dmg+' damage — INFINITE VOID OF DEATH GAMBLE ACTIVATED!','lu');
             sfxUlt(); updateBars(); setTimeout(cb,480);
           },240);
         } else {
